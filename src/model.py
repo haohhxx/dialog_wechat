@@ -10,8 +10,6 @@ from tensorflow.contrib.seq2seq import AttentionWrapper, AttentionWrapperState, 
 
 num_word = 0
 embedding_dim = 128
-encoder_lengths = 1000 #?
-decoder_lengths = 1000 #?
 batch_size = 30
 max_epoch = 100
 max_iteration = 10
@@ -28,8 +26,10 @@ PAD = 0
 EOS = 1
 
 encoder_inputs = tf.placeholder(shape=(batch_size, None), dtype=tf.int32, name='encoder_inputs')
+encoder_lengths = tf.placeholder(shape=(batch_size,), dtype=tf.int32, name='encoder_lengths')
 # batch_size, max_time
 decoder_inputs = tf.placeholder(shape=(batch_size, None), dtype=tf.int32, name='decoder_inputs')
+decoder_lengths = tf.placeholder(shape=(batch_size,),  dtype=tf.int32, name='decoder_inputs')
 
 with tf.variable_scope('word_embedding'):
     word_embedding = tf.get_variable(
@@ -63,8 +63,7 @@ with tf.variable_scope('decoder_cell'):
         if isinstance(encoder_final_state, LSTMStateTuple):
             tiled_encoder_final_state_c = tile_batch(encoder_final_state.c, beam_width)
             tiled_encoder_final_state_h = tile_batch(encoder_final_state.h, beam_width)
-            tiled_encoder_final_state = LSTMStateTuple(tiled_encoder_final_state_c,
-                                                       tiled_encoder_final_state_h)
+            tiled_encoder_final_state = LSTMStateTuple(tiled_encoder_final_state_c, tiled_encoder_final_state_h)
         else:
             tiled_encoder_final_state = tile_batch(encoder_final_state, beam_width)
 
@@ -100,6 +99,7 @@ with tf.variable_scope('decoder_cell'):
             tiled_batch_size, tf.float32).clone(
                 cell_state=tiled_encoder_final_state
             )
+
     with tf.variable_scope('word_embedding', reuse=True):
         word_embedding = tf.get_variable(name="word_embedding")
 
@@ -109,21 +109,14 @@ with tf.variable_scope('decoder_cell'):
         eosed_decoder_inputs = tf.concat([eoses, decoder_inputs], 1)
         embed_decoder_inputs = tf.nn.embedding_lookup(word_embedding, eosed_decoder_inputs)
 
-        training_helper = TrainingHelper(
-            embed_decoder_inputs,
-            decoder_lengths + 1
-        )
-        decoder = BasicDecoder(
-            decoder_cell,
-            training_helper,
-            decoder_initial_state,
-            output_layer=out_func,
-        )
+        training_helper = TrainingHelper(embed_decoder_inputs, decoder_lengths + 1)
+        decoder = BasicDecoder(decoder_cell, training_helper, decoder_initial_state, output_layer=out_func,)
         decoder_outputs, decoder_state, decoder_sequence_lengths = dynamic_decode(
                     decoder,
                     scope=tf.get_variable_scope(),
                     maximum_iterations=max_iteration
                 )
+
         tf.get_variable_scope().reuse_variables()
         start_tokens = tf.ones([batch_size], dtype=tf.int32) * EOS
         beam_decoder = BeamSearchDecoder(
