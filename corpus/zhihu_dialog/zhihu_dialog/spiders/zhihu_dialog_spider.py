@@ -16,12 +16,13 @@ class ZhihuloginSpider(scrapy.Spider):
     Agent = 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'
     header = {
         'User-Agent': Agent
-        , 'Accept-Encoding': 'deflate, br'
+        , 'Accept-Encoding': ''
     }
 
     def parse(self, response):
         with open('a.txt', 'w') as rtxt:
             print(type(response.body))
+            print(str(response.body))
             print(str(response.body, encoding='unicode-escape'))
             rtxt.write(str(response.body, encoding='unicode-escape'))
         # print(response.body)
