@@ -21,10 +21,9 @@ class ZhihuloginSpider(scrapy.Spider):
 
     def parse(self, response):
         with open('a.txt', 'w') as rtxt:
-            print(type(response.body))
-            print(str(response.body))
-            print(str(response.body, encoding='unicode-escape'))
-            rtxt.write(str(response.body, encoding='unicode-escape'))
+            # print(type(response.body))
+            rtxt.write(str(response.body))
+            # print(str(response.body, encoding='unicode-escape'))
         # print(response.body)
         print('=====================================================================')
         pass
