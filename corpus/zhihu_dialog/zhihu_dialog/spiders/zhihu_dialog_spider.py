@@ -4,6 +4,7 @@ import os
 
 import scrapy
 import time
+import codecs
 
 from PIL import Image
 
@@ -14,12 +15,16 @@ class ZhihuloginSpider(scrapy.Spider):
     start_urls = ['https://www.zhihu.com/']
     Agent = 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'
     header = {
-        'User-Agent': Agent,
+        'User-Agent': Agent
+        , 'Accept-Encoding': 'deflate, br'
     }
 
     def parse(self, response):
-        #主页爬取的具体内容
-        print(response.body)
+        with open('a.txt', 'w') as rtxt:
+            print(type(response.body))
+            print(str(response.body, encoding='unicode-escape'))
+            rtxt.write(str(response.body, encoding='unicode-escape'))
+        # print(response.body)
         print('=====================================================================')
         pass
 
@@ -48,8 +53,9 @@ class ZhihuloginSpider(scrapy.Spider):
         # post_url = 'https://www.zhihu.com/api/v3/oauth/sign_in'
         post_data = {
             "_xsrf": xsrf,
-            "phone_num": '18101282413',
-            "password": '00oo00OO',
+            #废弃的小号  用于测试
+            "phone_num": input('user:\n'),
+            "password":  input('password:\n'),
             "captcha": response.meta['captcha']
         }
         # return [scrapy.FormRequest(url=post_url, formdata=post_data,
