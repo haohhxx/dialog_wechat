@@ -71,7 +71,7 @@ class Sen2Seq(object):
                 output_attention=True,
             )
             decoder_initial_state = decoder_cell.zero_state(self.batch_size, tf.float32)\
-                                                .clone(cell_state=encoder_final_state)
+                .clone(cell_state=encoder_final_state)
         return decoder_initial_state
 
 
