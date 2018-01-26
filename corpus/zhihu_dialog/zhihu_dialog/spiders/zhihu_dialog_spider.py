@@ -4,20 +4,23 @@ import os
 
 import scrapy
 import time
-import codecs
 import re
 from urllib import parse
 from PIL import Image
 from ..items import ZhihuDialogItem
+
 
 class ZhihuloginSpider(scrapy.Spider):
     name = 'zhihulogin'
     allowed_domains = ['www.zhihu.com']
     start_urls = ['https://www.zhihu.com/']
     start_answer_url = 'https://www.zhihu.com/api/v4/questions/{}/answers?include=data%5B%2A%5D.is_normal%2Cadmin_closed_comment%2Creward_info%2Cis_collapsed%2Cannotation_action%2Cannotation_detail%2Ccollapse_reason%2Cis_sticky%2Ccollapsed_by%2Csuggest_edit%2Ccomment_count%2Ccan_comment%2Ccontent%2Ceditable_content%2Cvoteup_count%2Creshipment_settings%2Ccomment_permission%2Ccreated_time%2Cupdated_time%2Creview_info%2Cquestion%2Cexcerpt%2Crelationship.is_authorized%2Cis_author%2Cvoting%2Cis_thanked%2Cis_nothelp%2Cupvoted_followees%3Bdata%5B%2A%5D.mark_infos%5B%2A%5D.url%3Bdata%5B%2A%5D.author.follower_count%2Cbadge%5B%3F%28type%3Dbest_answerer%29%5D.topics&limit=20&offset=43&sort_by=default%20HTTP/1.1'
+    answer_url = 'https://www.zhihu.com/api/v4/questions/68717150/answers'
     contents_url = 'https://www.zhihu.com/api/v4/answers/{}/comments?include=data[*].author,collapsed,reply_to_author,disliked,content,voting,vote_count,is_parent_author,is_author&order=normal&limit=20&offset=0&status=open'
     conversation_url = 'https://www.zhihu.com/api/v4/comments/{}/conversation'
-
+    custom_settings = {'DOWNLOAD_DELAY': 0.2,
+                       'CONCURRENT_REQUESTS_PER_IP': 2,
+                       'DOWNLOADER_MIDDLEWARES': {}, }
     headers = {
         'HOST': 'www.zhihu.com',
         'Referer': 'https://www.zhihu.com',
@@ -41,45 +44,53 @@ class ZhihuloginSpider(scrapy.Spider):
                 # 如果提取到 question 相关的页面则下载后交由提取函数处理
                 question_url = match_obj.group(1)
                 question_id = match_obj.group(2)
-                yield scrapy.Request(question_url, meta={'question_id': question_id}, headers=self.headers,
-                                     callback=self.parse_question)
+                # time.sleep(100)
+                # yield scrapy.Request(question_url, meta={'question_id': question_id}, headers=self.headers,
+                #                      callback=self.parse_question)
+                yield scrapy.Request(self.answer_url.format(question_id), headers=self.headers,
+                                     callback=self.parse_answer)
             else:
                 # 如果不是 question 页面则直接进一步跟踪
                 yield scrapy.Request(url, headers=self.headers, callback=self.parse)
 
-    def parse_question(self, response):
-        # 处理 question 页面， 从页面中提取出具体的 question item
-        # if "QuestionHeader-title" in response.text:
-        # 处理新版本知乎
-        # 回答的api: https://www.zhihu.com/api/v4/questions/263413074/answers?limit=20&offset=23
-        question_id = response.meta['question_id']
-        yield scrapy.Request(self.start_answer_url.format(question_id), headers=self.headers,
-                             callback=self.parse_answer)
+    # def parse_question(self, response):
+    #     question_id = response.meta['question_id']
+    #     # yield scrapy.Request(self.start_answer_url.format(question_id), headers=self.headers,
+    #     #                      callback=self.parse_answer)
+    #     yield scrapy.Request(self.answer_url.format(question_id), headers=self.headers,
+    #                          callback=self.parse_answer)
 
     def parse_answer(self, response):
         ans_json = json.loads(response.text)
         is_end = ans_json['paging']['is_end']
-        answer_id = response.meta['answer_id']
+        for answer in ans_json['data']:
+            answer_id = answer['id']
+            yield scrapy.Request(self.contents_url.format(answer_id), headers=self.headers
+                                 , callback=self.parser_comments)
         if not is_end:
             next_url = ans_json['paging']['next']
-            yield scrapy.Request(next_url, headers=self.headers, callback=self.parse_answer)
-        yield scrapy.Request(self.contents_url.format(answer_id), headers=self.headers, callback=self.parser_comments)
+            yield scrapy.Request(next_url, headers=self.headers
+                                 , callback=self.parse_answer)
 
     def parser_comments(self, response):
         contents_json = json.loads(response.text)
         is_end = contents_json['paging']['is_end']
+        for comment in contents_json['data']:
+            if 'reply_to_author' in comment.keys():
+                comments_id = comment['id']
+                print("conversation_url===="+self.conversation_url.format(comments_id))
+                yield scrapy.Request(self.conversation_url.format(comments_id), headers=self.headers,
+                                     callback=self.parser_conversation)
         if not is_end:
             next_url = contents_json['paging']['next']
-            yield scrapy.Request(next_url, headers=self.headers, callback=self.parser_comments)
-        for comment in contents_json['data']:
-            if comment['reply_to_author'] is not None:
-                comments_id = comment['id']
-                yield scrapy.Request(self.conversation_url.format(comments_id), headers=self.headers, callback=self.parser_conversation)
+            yield scrapy.Request(next_url, headers=self.headers,
+                                 callback=self.parser_comments)
 
     def parser_conversation(self, response):
         conversation_item = ZhihuDialogItem()
         conversation_json = json.loads(response.text)
         contents = [dlg['content'] for dlg in conversation_json]
+        print(contents)
         conversation_item["dialogs"] = contents
         yield conversation_item
 
@@ -109,13 +120,13 @@ class ZhihuloginSpider(scrapy.Spider):
         post_data = {
             "_xsrf": xsrf,
             "phone_num": input('user:\n'),
-            "password":  input('password:\n'),
+            "password": input('password:\n'),
             "captcha": response.meta['captcha']
         }
         # return [scrapy.FormRequest(url=post_url, formdata=post_data,
         #                            headers=self.header, callback=self.check_login)]
-        yield scrapy.FormRequest(url=post_url, formdata=post_data,
-                                   headers=self.headers, callback=self.check_login)
+        yield scrapy.FormRequest(url=post_url, formdata=post_data, headers=self.headers
+                                 , callback=self.check_login)
 
     # 验证返回是否成功
     def check_login(self, response):
@@ -127,7 +138,3 @@ class ZhihuloginSpider(scrapy.Spider):
             for url in self.start_urls:
                 yield scrapy.Request(url=url, headers=self.headers, dont_filter=True
                                      , callback=self.parse)
-
-
-
-

@@ -13,8 +13,8 @@ BOT_NAME = 'zhihu_dialog'
 
 SPIDER_MODULES = ['zhihu_dialog.spiders']
 NEWSPIDER_MODULE = 'zhihu_dialog.spiders'
-
-
+LOG_LEVEL = 'INFO'
+# LOG_LEVEL = 'WARNING'
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'zhihu_dialog (+http://www.yourdomain.com)'
 # USER_AGENTS = [

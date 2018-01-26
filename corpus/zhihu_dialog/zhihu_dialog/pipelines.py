@@ -12,7 +12,7 @@ import codecs
 class ZhihuDialogPipeline(object):
     def __init__(self):
         self.file = codecs.open(
-            r'md.json'
+            r'D:\pycharm_workspace\dialog_wechat\corpus\zhihu_dialog\md.json'
             , 'wb', encoding='utf-8')
 
     def process_item(self, item, spider):
