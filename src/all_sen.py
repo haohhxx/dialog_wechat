@@ -21,6 +21,7 @@ class Utterance2Seq(object):
                 encoder_lengths,
                 name="attention_fn"
             )
+            
             decoder_cell = AttentionWrapper(
                 self.decoder_cell,
                 attention_mechanism,
