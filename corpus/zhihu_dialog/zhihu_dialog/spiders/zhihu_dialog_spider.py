@@ -125,10 +125,10 @@ class ZhihuloginSpider(scrapy.Spider):
         # post_url = 'https://www.zhihu.com/api/v3/oauth/sign_in'
         post_data = {
             "_xsrf": xsrf,
-            # "phone_num": input('user:\n'),
-            # "password": input('password:\n'),
-            "phone_num": '18101282413',
-            "password": '00oo00OO',
+            "phone_num": input('user:\n'),
+            "password": input('password:\n'),
+            # "phone_num": '18101282413',
+            # "password": '00oo00OO',
             "captcha": response.meta['captcha']
         }
         # return [scrapy.FormRequest(url=post_url, formdata=post_data,
