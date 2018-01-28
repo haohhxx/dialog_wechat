@@ -15,8 +15,63 @@ headers = {
         , 'X-UDID': 'AJBAchjPqAqPTkzZHIOLxPXFDkfhm9Oriw8='
 }
 
-url_str = 'https://www.zhihu.com/api/v4/comments/388124228/conversation?include=%24%5B*%5D.author%2Creply_to_author%2Ccontent%2Cvote_count'
-response = requests.get(url_str, headers=headers)
-print(response.content)
-# print(str(response.content, encoding='utf-8'))
-print(response.content.decode(encoding='utf-8'))
+# url_str = 'https://www.zhihu.com/api/v4/comments/388124228/conversation?include=%24%5B*%5D.author%2Creply_to_author%2Ccontent%2Cvote_count'
+# response = requests.get(url_str, headers=headers)
+# print(response.content)
+# # print(str(response.content, encoding='utf-8'))
+# print(response.content.decode(encoding='utf-8'))
+
+str = '''{'dialogs': ['发TD是无效的…我之前曾经在某公司上班时，发这种短信就是我负责的…',
+             '如何才能解决，受不了了，每天都看见它',
+             '其他的我不了解…我之前的就是几万条短信一起群发，只要有你的号码就能给你发。']}'''
+
+print(str)
+'''https://www.zhihu.com/api/v4/articles/33135210/comments?include=data%5B*%5D.author%2Ccollapsed%2Creply_to_author%2Cdisliked%2Ccontent%2Cvoting%2Cvote_count%2Cis_parent_author%2Cis_author&order=normal&limit=20&offset=0&status=open
+
+
+
+
+https://www.zhihu.com/api/v4/comments/387977442/conversation?include=%24%5B*%5D.author%2Creply_to_author%2Ccontent%2Cvote_count
+
+
+
+
+
+
+
+https://www.zhihu.com/api/v4/articles/33135210/
+comments?include=data[*].author,collapsed,reply_to_author,disliked,content,voting,vote_count,is_parent_author,is_author
+&order=normal
+&limit=20&offset=0&status=open
+
+
+https://www.zhihu.com/api/v4/answers/269924192/comments
+?include=data[*].author,collapsed,reply_to_author,disliked,content,voting,vote_count,is_parent_author,is_author
+&order=normal
+&limit=20&offset=0&status=open
+
+https://www.zhihu.com/api/v4/articles/33135210/
+comments?include=data[*].areply_to_author
+&order=normal
+&limit=20&offset=0&status=open
+
+
+https://www.zhihu.com/api/v4/comments/387977442/conversation?include=$[*].author,reply_to_author,content,vote_count
+
+
+https://www.zhihu.com/api/v4/questions/68717150/answers?include=data%5B%2A%5D.is_normal%2Cadmin_closed_comment%2Creward_info%2Cis_collapsed%2Cannotation_action%2Cannotation_detail%2Ccollapse_reason%2Cis_sticky%2Ccollapsed_by%2Csuggest_edit%2Ccomment_count%2Ccan_comment%2Ccontent%2Ceditable_content%2Cvoteup_count%2Creshipment_settings%2Ccomment_permission%2Ccreated_time%2Cupdated_time%2Creview_info%2Cquestion%2Cexcerpt%2Crelationship.is_authorized%2Cis_author%2Cvoting%2Cis_thanked%2Cis_nothelp%2Cupvoted_followees%3Bdata%5B%2A%5D.mark_infos%5B%2A%5D.url%3Bdata%5B%2A%5D.author.follower_count%2Cbadge%5B%3F%28type%3Dbest_answerer%29%5D.topics&limit=20&offset=43&sort_by=default%20HTTP/1.1
+
+
+
+https://www.zhihu.com/api/v4/questions/{}/answers?include=data%5B%2A%5D.is_normal%2Cadmin_closed_comment%2Creward_info%2Cis_collapsed%2Cannotation_action%2Cannotation_detail%2Ccollapse_reason%2Cis_sticky%2Ccollapsed_by%2Csuggest_edit%2Ccomment_count%2Ccan_comment%2Ccontent%2Ceditable_content%2Cvoteup_count%2Creshipment_settings%2Ccomment_permission%2Ccreated_time%2Cupdated_time%2Creview_info%2Cquestion%2Cexcerpt%2Crelationship.is_authorized%2Cis_author%2Cvoting%2Cis_thanked%2Cis_nothelp%2Cupvoted_followees%3Bdata%5B%2A%5D.mark_infos%5B%2A%5D.url%3Bdata%5B%2A%5D.author.follower_count%2Cbadge%5B%3F%28type%3Dbest_answerer%29%5D.topics&limit=20&offset=43&sort_by=default%20HTTP/1.1
+
+
+
+
+
+
+
+
+
+
+'''

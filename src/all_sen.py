@@ -12,22 +12,11 @@ from tensorflow.contrib.seq2seq import AttentionWrapper, AttentionWrapperState, 
 
 
 class Utterance2Seq(object):
+    batch_size = 30
+    encoder_inputs = tf.placeholder(shape=(batch_size, 5, None), dtype=tf.int32, name='encoder_inputs')
+    encoder_lengths = tf.placeholder(shape=(batch_size,), dtype=tf.int32, name='encoder_lengths')
+    # batch_size, max_time
+    decoder_inputs = tf.placeholder(shape=(batch_size, None), dtype=tf.int32, name='decoder_inputs')
+    decoder_lengths = tf.placeholder(shape=(batch_size,), dtype=tf.int32, name='decoder_inputs')
 
-    def _build_utterance_attention(self, sen_attention):
-        with tf.variable_scope('utterance_attention'):
-            attention_mechanism = BahdanauAttention(
-                self.attention_num_units,
-                encoder_outputs,
-                encoder_lengths,
-                name="attention_fn"
-            )
-            
-            decoder_cell = AttentionWrapper(
-                self.decoder_cell,
-                attention_mechanism,
-                attention_layer_size=self.attention_depth,
-                output_attention=True,
-            )
-            decoder_initial_state = decoder_cell.zero_state(self.batch_size, tf.float32)\
-                                                .clone(cell_state=encoder_final_state)
-        return decoder_initial_state
+

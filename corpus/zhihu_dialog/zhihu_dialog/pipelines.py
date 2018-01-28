@@ -12,17 +12,14 @@ import codecs
 class ZhihuDialogPipeline(object):
     def __init__(self):
         self.file = codecs.open(
-            r'D:\pycharm_workspace\dialog_wechat\corpus\zhihu_dialog\md.json'
+            r'D:\pycharm_workspace\dialog_wechat\corpus\zhihu_dialog\md2.json'
             , 'a', encoding='utf-8')
         # self.file = open(r'D:\pycharm_workspace\dialog_wechat\corpus\zhihu_dialog\md.json', 'w')
 
     def process_item(self, item, spider):
         line = json.dumps(dict(item))
-        # print(line)
-        bline = bytes(line, encoding="utf-8")
-        # print('lineline'+str(line))
-        # self.file.write(line.encode('utf-8'))
-        self.file.write(bline.decode('unicode-escape')+'\n')
-        # self.file.write(line + '\n')
-        # self.file.write(str(line.encode('utf-8'))+'\n')
+        # line = bytes(line, encoding="utf-32")
+        # line = line.decode('unicode-escape')
+        # self.file.write(line.replace('\n', '') + '\n')
+        self.file.write(line.replace('\n', '') + '\n')
         return item

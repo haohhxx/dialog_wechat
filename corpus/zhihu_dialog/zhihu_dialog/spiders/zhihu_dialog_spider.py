@@ -20,41 +20,47 @@ class ZhihuloginSpider(scrapy.Spider):
                    '?include=data[*].author,collapsed,reply_to_author,disliked,content,voting,vote_count,is_parent_author,is_author' \
                    '&order=normal&limit=100&offset=0&status=open'
     conversation_url = 'https://www.zhihu.com/api/v4/comments/{}/conversation'
-    custom_settings = {'DOWNLOAD_DELAY': 0.2,
-                       'CONCURRENT_REQUESTS_PER_IP': 3,
+    custom_settings = {'DOWNLOAD_DELAY': 0.8,
+                       'CONCURRENT_REQUESTS_PER_IP': 1,
                        'DOWNLOADER_MIDDLEWARES': {}, }
     headers = {
-        'HOST': 'www.zhihu.com',
-        'Referer': 'https://www.zhihu.com',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36'
+           'HOST': 'www.zhihu.com'
+         , 'Referer': 'https://www.zhihu.com'
+         # , 'Accept-Encoding': ''
+         , 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36'
     }
+    question_id_path = 'D:\pycharm_workspace\dialog_wechat\corpus\zhihu_dialog\word\qids'
+    question_ids = open(question_id_path, 'r').readlines()
 
     def parse(self, response):
-        """
-        提取出html页面中的所有url 并跟踪这些url进行进一步爬取
-        如果提取的url 格式为 ／question/xxx 就下载后直接进入解析函数
-        """
-        # print(response)
+        with open(self.question_id_path, 'a') as question_id_file:
+            """
+            提取出html页面中的所有url 并跟踪这些url进行进一步爬取
+            如果提取的url 格式为 ／question/xxx 就下载后直接进入解析函数
+            """
+            # print(response)
 
-        # 全站搜索过滤法
-        all_urls = response.css('a::attr(href)').extract()
-        all_urls = [parse.urljoin(response.url, url) for url in all_urls]
-        all_urls = filter(lambda x: True if x.startswith("http") else False, all_urls)
-        for url in all_urls:
-            match_obj = re.match(r'(.*zhihu.com/question/(\d+?))(/|$)', url)
-            if match_obj:
-                # 如果提取到 question 相关的页面则下载后交由提取函数处理
-                question_url = match_obj.group(1)
-                question_id = match_obj.group(2)
-                print(question_id)
-                time.sleep(1)
-                # yield scrapy.Request(question_url, meta={'question_id': question_id}, headers=self.headers,
-                #                      callback=self.parse_question)
-                yield scrapy.Request(self.answer_url.format(question_id), headers=self.headers,
-                                     callback=self.parse_answer)
-            else:
-                # 如果不是 question 页面则直接进一步跟踪
-                yield scrapy.Request(url, headers=self.headers, callback=self.parse)
+            # 全站搜索过滤法
+            all_urls = response.css('a::attr(href)').extract()
+            all_urls = [parse.urljoin(response.url, url) for url in all_urls]
+            all_urls = filter(lambda x: True if x.startswith("http") else False, all_urls)
+            for url in all_urls:
+                match_obj = re.match(r'(.*zhihu.com/question/(\d+?))(/|$)', url)
+                if match_obj:
+                    # 如果提取到 question 相关的页面则下载后交由提取函数处理
+                    question_url = match_obj.group(1)
+                    question_id = match_obj.group(2)
+                    if question_id not in self.question_ids:
+                        question_id_file.write(str(question_id)+'\n')
+                        # print(question_id)
+                        time.sleep(1)
+                        # yield scrapy.Request(question_url, meta={'question_id': question_id}, headers=self.headers,
+                        #                      callback=self.parse_question)
+                        yield scrapy.Request(self.answer_url.format(question_id), headers=self.headers,
+                                             callback=self.parse_answer)
+                else:
+                    # 如果不是 question 页面则直接进一步跟踪
+                    yield scrapy.Request(url, headers=self.headers, callback=self.parse)
 
     # def parse_question(self, response):
     #     question_id = response.meta['question_id']
@@ -64,7 +70,7 @@ class ZhihuloginSpider(scrapy.Spider):
     #                          callback=self.parse_answer)
 
     def parse_answer(self, response):
-        min_answer_nub = 20
+        min_answer_nub = 80
         ans_json = json.loads(response.text)
         is_end = ans_json['paging']['is_end']
         totals = ans_json['paging']['totals']
@@ -127,8 +133,6 @@ class ZhihuloginSpider(scrapy.Spider):
             "_xsrf": xsrf,
             "phone_num": input('user:\n'),
             "password": input('password:\n'),
-            # "phone_num": '18101282413',
-            # "password": '00oo00OO',
             "captcha": response.meta['captcha']
         }
         # return [scrapy.FormRequest(url=post_url, formdata=post_data,
