@@ -23,7 +23,7 @@ with open(json_path, 'r') as json_file, \
             print(line)
             pass
 
-
+# todo 处理 “此评论已删除”并统计这类语料
 
 
 
