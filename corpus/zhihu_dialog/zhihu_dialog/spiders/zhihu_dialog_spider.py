@@ -20,7 +20,7 @@ class ZhihuloginSpider(scrapy.Spider):
                    '?include=data[*].author,collapsed,reply_to_author,disliked,content,voting,vote_count,is_parent_author,is_author' \
                    '&order=normal&limit=100&offset=0&status=open'
     conversation_url = 'https://www.zhihu.com/api/v4/comments/{}/conversation'
-    custom_settings = {'DOWNLOAD_DELAY': 0.8,
+    custom_settings = {'DOWNLOAD_DELAY': 1.8,
                        'CONCURRENT_REQUESTS_PER_IP': 1,
                        'DOWNLOADER_MIDDLEWARES': {}, }
     headers = {
@@ -51,6 +51,7 @@ class ZhihuloginSpider(scrapy.Spider):
                     question_url = match_obj.group(1)
                     question_id = match_obj.group(2)
                     if question_id not in self.question_ids:
+                        self.question_ids.append(question_id)
                         question_id_file.write(str(question_id)+'\n')
                         # print(question_id)
                         time.sleep(1)

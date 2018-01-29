@@ -1,24 +1,38 @@
 #! /usr/bin/python
 # -*- coding: utf8 -*-
 
+import word2vec
 import numpy as np
 
 
-class DataLoader(object):
-    def __init__(self, batch_size=30, content=r'./data/content_cut', max_iter=50):
+def load_w2vec(vec_bin_path):
+    w2v = word2vec.load(vec_bin_path)
+    vectors = w2v.vectors
+    word2id = {}
+    id2word = {}
+    for i, j in enumerate(w2v.vocab):
+        word2id[i] = j
+        id2word[j] = i
+    return word2id, id2word, vectors
 
-        self.word_to_id = {}
-        self.id_to_word = {}
-        self.voc_size = {}
+
+class DataLoader(object):
+
+    iternub = 1
+    max_sentence_length = 0
+
+    def __init__(self, batch_size=30
+                 , content_path=r'./data/content_cut'
+                 , vec_bin_path=r'..\corpus\dialog_datas\sentence_vocbulart.txt.phrases.bin'
+                 , max_iter=50):
+
+        self.word_to_id, self.id_to_word, self.vectors = load_w2vec(vec_bin_path)
         self.datas = []
-        self.words_as_set = []
         self.lines = []
 
-        self.iternub = 1
-        self.max_sentence_length = 0
         self.max_iter = max_iter
         self.batch_size = batch_size
-        self.content = content
+        self.content_path = content_path
         self.statistic_voc()
         self.text_array = np.zeros([len(self.lines), self.max_sentence_length], dtype=np.int32)
         self.train_test_index = int(len(self.lines)/2)
@@ -27,18 +41,13 @@ class DataLoader(object):
         self.load()
 
     def statistic_voc(self):
-        with open(self.content, 'r', encoding='utf-8') as f:
+        with open(self.content_path, 'r', encoding='utf-8') as f:
             self.lines = f.readlines()
-        for line in self.lines:
-            line = line.split('\t')[1]
-            words = [word.strip() for word in line.split(' ')]
-            if self.max_sentence_length < len(words):
-                self.max_sentence_length = len(words)
-            self.words_as_set.extend(words)
-        self.words_as_set = set(self.words_as_set)
-        self.word_to_id = {w: i for i, w in enumerate(self.words_as_set)}
-        self.id_to_word = {i: w for i, w in enumerate(self.words_as_set)}
-        self.voc_size = len(self.words_as_set)
+            for line in self.lines:
+                line = line.split('\t')[1]
+                words = [word.strip() for word in line.split(' ')]
+                if self.max_sentence_length < len(words):
+                    self.max_sentence_length = len(words)
 
     def load(self):
         for i, line in enumerate(self.lines):
