@@ -8,6 +8,8 @@ from tensorflow.contrib.seq2seq import AttentionWrapper, AttentionWrapperState, 
     TrainingHelper, sequence_loss, tile_batch, \
     BahdanauAttention, LuongAttention
 
+from src import data_load
+
 num_word = 0
 embedding_dim = 128
 batch_size = 30
@@ -43,14 +45,24 @@ with tf.variable_scope('word_embedding'):
 
 with tf.variable_scope('encoder'):
     encoder_cell = LSTMCell(encoder_rnn_state_size)
-    encoder_outputs, encoder_final_state = tf.nn.dynamic_rnn(
-        encoder_cell,
-        encoder_input_vectors,
-        sequence_length=encoder_lengths,
-        time_major=False,
-        dtype=tf.float32
-    )
-    encoder_final_state.set_shape([batch_size, encoder_rnn_state_size])
+    (fw_output, bw_output), (fw_final_state, bw_final_state) = \
+        tf.nn.bidirectional_dynamic_rnn(
+            encoder_cell, encoder_cell,
+            encoder_input_vectors,
+            sequence_length=encoder_lengths,
+            time_major=False,
+            dtype=tf.float32
+        )
+    encoder_outputs = tf.concat([fw_output, bw_output], 2)
+    if isinstance(fw_final_state, LSTMStateTuple):
+        encoder_state_c = tf.concat(
+            [fw_final_state.c, bw_final_state.c], 1)
+        encoder_state_h = tf.concat(
+            [fw_final_state.h, bw_final_state.h], 1)
+        encoder_state_c.set_shape([batch_size, encoder_rnn_state_size * 2])
+        encoder_state_h.set_shape([batch_size, encoder_rnn_state_size * 2])
+
+        encoder_final_state = LSTMStateTuple(encoder_state_c, encoder_state_h)
 
 tiled_batch_size = batch_size * beam_width
 with tf.variable_scope('decoder_cell'):
@@ -190,15 +202,19 @@ with tf.variable_scope('train'):
     with tf.control_dependencies([apply_gradient_op]):
         train_op = tf.no_op(name='train_step')
 
+batch_data = data_load.DataLoader()
 with tf.Session() as sess:
     sess.run([tf.global_variables_initializer(), tf.local_variables_initializer()])
     for epoch in range(1, max_epoch + 1):
-        for step, data_dict in enumerate(dataset.train_datas(batch_size)):
-            feed_dict = {
-
-            }
-            _, decoder_result_ids_, loss_value_ = \
-                sess.run([train_op, decoder_results['decoder_result_ids'], seq_loss], feed_dict)
+        data_dict = batch_data.train_data(epoch)
+        feed_dict = {
+            encoder_inputs: data_dict['x_data'],
+            encoder_lengths: data_dict['x_data_length'],
+            decoder_inputs: data_dict['y_data'],
+            decoder_lengths: data_dict['y_data_length'],
+        }
+        _, decoder_result_ids_, loss_value_ = \
+            sess.run([train_op, decoder_results['decoder_result_ids'], seq_loss], feed_dict)
 
 
 
