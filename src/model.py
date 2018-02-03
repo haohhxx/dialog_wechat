@@ -45,8 +45,7 @@ with tf.variable_scope('word_embedding'):
 
 with tf.variable_scope('encoder'):
     encoder_cell = LSTMCell(encoder_rnn_state_size)
-    (fw_output, bw_output), (fw_final_state, bw_final_state) = \
-        tf.nn.bidirectional_dynamic_rnn(
+    (fw_output, bw_output), (fw_final_state, bw_final_state) = tf.nn.bidirectional_dynamic_rnn(
             encoder_cell, encoder_cell,
             encoder_input_vectors,
             sequence_length=encoder_lengths,
@@ -54,30 +53,26 @@ with tf.variable_scope('encoder'):
             dtype=tf.float32
         )
     encoder_outputs = tf.concat([fw_output, bw_output], 2)
-    if isinstance(fw_final_state, LSTMStateTuple):
-        encoder_state_c = tf.concat(
-            [fw_final_state.c, bw_final_state.c], 1)
-        encoder_state_h = tf.concat(
-            [fw_final_state.h, bw_final_state.h], 1)
-        encoder_state_c.set_shape([batch_size, encoder_rnn_state_size * 2])
-        encoder_state_h.set_shape([batch_size, encoder_rnn_state_size * 2])
+    # if isinstance(fw_final_state, LSTMStateTuple):
+    encoder_state_c = tf.concat([fw_final_state.c, bw_final_state.c], 1)
+    encoder_state_h = tf.concat([fw_final_state.h, bw_final_state.h], 1)
+    encoder_state_c.set_shape([batch_size, encoder_rnn_state_size * 2])
+    encoder_state_h.set_shape([batch_size, encoder_rnn_state_size * 2])
 
-        encoder_final_state = LSTMStateTuple(encoder_state_c, encoder_state_h)
+    encoder_final_state = LSTMStateTuple(encoder_state_c, encoder_state_h)
 
 tiled_batch_size = batch_size * beam_width
 with tf.variable_scope('decoder_cell'):
+
     decoder_cell = LSTMCell(decoder_rnn_state_size)
 
     with tf.variable_scope('beam_inputs'):
         tiled_encoder_outputs = tile_batch(encoder_outputs, beam_width)
         tiled_encoder_lengths = tile_batch(encoder_lengths, beam_width)
 
-        if isinstance(encoder_final_state, LSTMStateTuple):
-            tiled_encoder_final_state_c = tile_batch(encoder_final_state.c, beam_width)
-            tiled_encoder_final_state_h = tile_batch(encoder_final_state.h, beam_width)
-            tiled_encoder_final_state = LSTMStateTuple(tiled_encoder_final_state_c, tiled_encoder_final_state_h)
-        else:
-            tiled_encoder_final_state = tile_batch(encoder_final_state, beam_width)
+        tiled_encoder_final_state_c = tile_batch(encoder_final_state.c, beam_width)
+        tiled_encoder_final_state_h = tile_batch(encoder_final_state.h, beam_width)
+        tiled_encoder_final_state = LSTMStateTuple(tiled_encoder_final_state_c, tiled_encoder_final_state_h)
 
     with tf.variable_scope('attention'):
         attention_mechanism = BahdanauAttention(
@@ -107,10 +102,10 @@ with tf.variable_scope('decoder_cell'):
             attention_layer_size=attention_depth,
             output_attention=True
         )
-        tiled_decoder_initial_state = beam_decoder_cell.zero_state(
-            tiled_batch_size, tf.float32).clone(
-                cell_state=tiled_encoder_final_state
-            )
+
+        tiled_decoder_initial_state = beam_decoder_cell\
+            .zero_state(tiled_batch_size, tf.float32)\
+            .clone(cell_state=tiled_encoder_final_state)
 
     with tf.variable_scope('word_embedding', reuse=True):
         word_embedding = tf.get_variable(name="word_embedding")
