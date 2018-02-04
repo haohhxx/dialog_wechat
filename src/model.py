@@ -10,7 +10,7 @@ from tensorflow.contrib.seq2seq import AttentionWrapper, AttentionWrapperState, 
 
 from src import data_load
 
-num_word = 0
+num_word = 26102
 embedding_dim = 128
 batch_size = 30
 max_epoch = 100
@@ -32,6 +32,11 @@ encoder_lengths = tf.placeholder(shape=(batch_size,), dtype=tf.int32, name='enco
 # batch_size, max_time
 decoder_inputs = tf.placeholder(shape=(batch_size, None), dtype=tf.int32, name='decoder_inputs')
 decoder_lengths = tf.placeholder(shape=(batch_size,),  dtype=tf.int32, name='decoder_inputs')
+
+encoder_inputs.set_shape([batch_size, None])
+decoder_inputs.set_shape([batch_size, None])
+encoder_lengths.set_shape([batch_size])
+decoder_lengths.set_shape([batch_size])
 
 with tf.variable_scope('word_embedding'):
     word_embedding = tf.get_variable(
@@ -63,8 +68,9 @@ with tf.variable_scope('encoder'):
 
 tiled_batch_size = batch_size * beam_width
 with tf.variable_scope('decoder_cell'):
-
+    decoder_rnn_state_size *= 2
     decoder_cell = LSTMCell(decoder_rnn_state_size)
+    original_decoder_cell = decoder_cell
 
     with tf.variable_scope('beam_inputs'):
         tiled_encoder_outputs = tile_batch(encoder_outputs, beam_width)
@@ -97,18 +103,18 @@ with tf.variable_scope('decoder_cell'):
             name="attention_fn"
         )
         beam_decoder_cell = AttentionWrapper(
-            decoder_cell,
+            original_decoder_cell,
             beam_attention_mechanism,
             attention_layer_size=attention_depth,
             output_attention=True
         )
-
+        # beam_decoder_cell 单独的original_decoder_cell
         tiled_decoder_initial_state = beam_decoder_cell\
             .zero_state(tiled_batch_size, tf.float32)\
             .clone(cell_state=tiled_encoder_final_state)
 
-    with tf.variable_scope('word_embedding', reuse=True):
-        word_embedding = tf.get_variable(name="word_embedding")
+    # with tf.variable_scope('word_embedding', reuse=True):
+    #     word_embedding = tf.get_variable(name="word_embedding")
 
     with tf.variable_scope('decoder'):
         out_func = layers_core.Dense(num_word, use_bias=False)
@@ -116,8 +122,16 @@ with tf.variable_scope('decoder_cell'):
         eosed_decoder_inputs = tf.concat([eoses, decoder_inputs], 1)
         embed_decoder_inputs = tf.nn.embedding_lookup(word_embedding, eosed_decoder_inputs)
 
-        training_helper = TrainingHelper(embed_decoder_inputs, decoder_lengths + 1)
-        decoder = BasicDecoder(decoder_cell, training_helper, decoder_initial_state, output_layer=out_func,)
+        training_helper = TrainingHelper(
+            embed_decoder_inputs,
+            decoder_lengths + 1
+        )
+        decoder = BasicDecoder(
+            decoder_cell,
+            training_helper,
+            decoder_initial_state,
+            output_layer=out_func,
+        )
         decoder_outputs, decoder_state, decoder_sequence_lengths = dynamic_decode(
                     decoder,
                     scope=tf.get_variable_scope(),
@@ -154,7 +168,7 @@ with tf.variable_scope('decoder_cell'):
 
 with tf.variable_scope('loss_target'):
     # build decoder output, with appropriate padding and mask
-    batch_size = batch_size
+    # batch_size = batch_size
     pads = tf.ones([batch_size, 1], dtype=tf.int32) * PAD
     paded_decoder_inputs = tf.concat([decoder_inputs, pads], 1)
     max_decoder_time = tf.reduce_max(decoder_lengths) + 1
@@ -200,8 +214,7 @@ with tf.variable_scope('train'):
 batch_data = data_load.DataLoader()
 with tf.Session() as sess:
     sess.run([tf.global_variables_initializer(), tf.local_variables_initializer()])
-    for epoch in range(1, max_epoch + 1):
-        data_dict = batch_data.train_data(epoch)
+    for data_dict in batch_data.train_data(max_epoch):
         feed_dict = {
             encoder_inputs: data_dict['x_data'],
             encoder_lengths: data_dict['x_data_length'],

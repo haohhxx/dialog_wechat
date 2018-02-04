@@ -8,13 +8,23 @@ import numpy as np
 def load_w2vec(vec_bin_path):
     w2v = word2vec.load(vec_bin_path)
     vectors = w2v.vectors
-    word2id = {}
-    id2word = {}
+    word2id = {'': -1}
+    id2word = {-1: ''}
     for i, j in enumerate(w2v.vocab):
         id2word[i] = j
         word2id[j] = i
     return word2id, id2word, vectors
 
+
+def load_word_vocbulary(voc_path):
+    with open(voc_path, 'r', encoding='utf-8') as voc_file:
+        word2id = {'': -1}
+        id2word = {-1: ''}
+        for i, j in enumerate(voc_file.readlines()):
+            j = j.split(' ')[0]
+            id2word[i] = j
+            word2id[j] = i
+        return word2id, id2word
 
 class DataLoader(object):
 
@@ -27,9 +37,11 @@ class DataLoader(object):
     def __init__(self, batch_size=30
                  , content_path=r'..\corpus\dialog_datas\sentence_dialog.txt'
                  , vec_bin_path=r'..\corpus\dialog_datas\sentence_vocbulart.txt.phrases.bin'
+                 , voc_path=r'D:\pycharm_workspace\dialog_wechat\corpus\dialog_datas\voc'
                  , max_iter=50):
 
-        self.word_to_id, self.id_to_word, self.vectors = load_w2vec(vec_bin_path)
+        # self.word_to_id, self.id_to_word, self.vectors = load_w2vec(vec_bin_path)
+        self.word_to_id, self.id_to_word = load_word_vocbulary(voc_path)
 
         self.max_iter = max_iter
         self.batch_size = batch_size
@@ -54,15 +66,15 @@ class DataLoader(object):
     def load(self):
         for i, line in enumerate(self.lines):
             ls = line.split('\t')
-            # for sentence in ls:
-            words = ls[0].split(" ")
-            self.x_array_length[i] = len(words)
-            for j, word in enumerate(words):
-                self.x_array[i, j] = self.word_to_id[word.strip()]
-            words = ls[1].split(" ")
-            self.y_array_length[i] = len(words)
-            for j, word in enumerate(words):
-                self.y_array[i, j] = self.word_to_id[word.strip()]
+            if len(ls) > 1:
+                words = ls[0].split(" ")
+                self.x_array_length[i] = len(words)
+                for j, word in enumerate(words):
+                    self.x_array[i, j] = self.word_to_id[word.strip()]
+                words = ls[1].split(" ")
+                self.y_array_length[i] = len(words)
+                for j, word in enumerate(words):
+                    self.y_array[i, j] = self.word_to_id[word.strip()]
 
     def train_data(self, batch_nub):
         if self.iternub > self.max_iter:
