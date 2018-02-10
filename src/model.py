@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+
+import os
+
 import tensorflow as tf
 from tensorflow.python.layers import core as layers_core
 from tensorflow.contrib.rnn import LSTMCell, LSTMStateTuple, GRUCell
@@ -10,12 +13,13 @@ from tensorflow.contrib.seq2seq import AttentionWrapper, AttentionWrapperState, 
 
 from src import data_load
 
+batch_size = 30
+batch_data = data_load.DataLoader(batch_size)
 
-batch_data = data_load.DataLoader()
+model_dir = r'./model'
 
 num_word = 26102
 embedding_dim = 128
-batch_size = 30
 max_epoch = 1000
 max_iteration = batch_data.max_sentence_length+1
 encoder_rnn_state_size = 100
@@ -214,31 +218,24 @@ with tf.variable_scope('train'):
     with tf.control_dependencies([apply_gradient_op]):
         train_op = tf.no_op(name='train_step')
 
-
+saver = tf.train.Saver(tf.global_variables())
 with tf.Session() as sess:
     sess.run([tf.global_variables_initializer(), tf.local_variables_initializer()])
-    for i, data_dict in enumerate(batch_data.train_data(max_epoch)):
-        feed_dict = {
-            encoder_inputs: data_dict['x_data'],
-            encoder_lengths: data_dict['x_data_length'],
-            decoder_inputs: data_dict['y_data'],
-            decoder_lengths: data_dict['y_data_length'],
-        }
-        # _decoder_outputs = sess.run(decoder_results['decoder_outputs'], feed_dict)
-        _, decoder_result_ids_, loss_value_ = \
-            sess.run([train_op, decoder_results['decoder_result_ids'], seq_loss], feed_dict)
-        if i % 10 == 0:
-            print("loss {}".format(loss_value_))
+    for epoch in range(max_epoch):
+        for batch, data_dict in enumerate(batch_data.train_data()):
+            feed_dict = {
+                encoder_inputs: data_dict['x_data'],
+                encoder_lengths: data_dict['x_data_length'],
+                decoder_inputs: data_dict['y_data'],
+                decoder_lengths: data_dict['y_data_length'],
+            }
+            # _decoder_outputs = sess.run(decoder_results['decoder_outputs'], feed_dict)
+            _, decoder_result_ids_, loss_value_ = \
+                sess.run([train_op, decoder_results['decoder_result_ids'], seq_loss], feed_dict)
+            if epoch % 10 == 0:
+                print('Epoch: %d, batch: %d, training loss: %.6f' % (epoch, batch, loss_value_))
 
-
-
-
-
-
-
-
-
-
+            saver.save(sess, os.path.join(model_dir, 'chat'), global_step=epoch)
 
 
 

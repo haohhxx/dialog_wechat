@@ -26,9 +26,9 @@ def load_word_vocbulary(voc_path):
             word2id[j] = i
         return word2id, id2word
 
+
 class DataLoader(object):
 
-    iternub = 1
     max_sentence_length = 0
     datas = []
     lines = []
@@ -38,12 +38,11 @@ class DataLoader(object):
                  , content_path=r'..\corpus\dialog_datas\sentence_dialog.txt'
                  , vec_bin_path=r'..\corpus\dialog_datas\sentence_vocbulart.txt.phrases.bin'
                  , voc_path=r'D:\pycharm_workspace\dialog_wechat\corpus\dialog_datas\voc'
-                 , max_iter=50):
+                 ):
 
         # self.word_to_id, self.id_to_word, self.vectors = load_w2vec(vec_bin_path)
         self.word_to_id, self.id_to_word = load_word_vocbulary(voc_path)
 
-        self.max_iter = max_iter
         self.batch_size = batch_size
         self.content_path = content_path
         self.statistic_voc()
@@ -67,22 +66,20 @@ class DataLoader(object):
         for i, line in enumerate(self.lines):
             ls = line.split('\t')
             if len(ls) > 1:
-                words = ls[0].split(" ")
-                self.x_array_length[i] = len(words)
-                for j, word in enumerate(words):
+                words_x = ls[0].split(" ")
+                words_y = ls[1].split(" ")
+                self.x_array_length[i] = len(words_x)
+                for j, word in enumerate(words_x):
                     self.x_array[i, j] = self.word_to_id[word.strip()]
-                words = ls[1].split(" ")
-                self.y_array_length[i] = len(words)
-                for j, word in enumerate(words):
+                self.y_array_length[i] = len(words_y)
+                for j, word in enumerate(words_y):
                     self.y_array[i, j] = self.word_to_id[word.strip()]
 
-    def train_data(self, batch_nub):
-        if self.iternub > self.max_iter:
-            return None
-        for _ in range(batch_nub):
+    def train_data(self):
+        while 1:
             if self.train_batch_index > self.train_test_index:
                 self.train_batch_index = 0
-                self.iternub += 1
+                break
             yield {
                     'x_data': self.x_array[self.train_batch_index: (self.train_batch_index + self.batch_size)],
                     'y_data': self.y_array[self.train_batch_index: (self.train_batch_index + self.batch_size)],
