@@ -34,7 +34,7 @@ class DataLoader(object):
     lines = []
     train_batch_index = 0
 
-    def __init__(self, batch_size=30
+    def __init__(self
                  , content_path=r'..\corpus\dialog_datas\sentence_dialog.txt'
                  , vec_bin_path=r'..\corpus\dialog_datas\sentence_vocbulart.txt.phrases.bin'
                  , voc_path=r'D:\pycharm_workspace\dialog_wechat\corpus\dialog_datas\voc'
@@ -43,7 +43,7 @@ class DataLoader(object):
         # self.word_to_id, self.id_to_word, self.vectors = load_w2vec(vec_bin_path)
         self.word_to_id, self.id_to_word = load_word_vocbulary(voc_path)
 
-        self.batch_size = batch_size
+        # self.batch_size = batch_size
         self.content_path = content_path
         self.statistic_voc()
         self.x_array = np.zeros([len(self.lines), self.max_sentence_length], dtype=np.int32)
@@ -75,18 +75,18 @@ class DataLoader(object):
                 for j, word in enumerate(words_y):
                     self.y_array[i, j] = self.word_to_id[word.strip()]
 
-    def train_data(self):
+    def train_data(self, batch_size):
         while 1:
             if self.train_batch_index > self.train_test_index:
                 self.train_batch_index = 0
                 break
             yield {
-                    'x_data': self.x_array[self.train_batch_index: (self.train_batch_index + self.batch_size)],
-                    'y_data': self.y_array[self.train_batch_index: (self.train_batch_index + self.batch_size)],
-                    'x_data_length': self.x_array_length[self.train_batch_index: (self.train_batch_index + self.batch_size)],
-                    'y_data_length': self.y_array_length[self.train_batch_index: (self.train_batch_index + self.batch_size)],
+                    'x_data': self.x_array[self.train_batch_index: (self.train_batch_index + batch_size)],
+                    'y_data': self.y_array[self.train_batch_index: (self.train_batch_index + batch_size)],
+                    'x_data_length': self.x_array_length[self.train_batch_index: (self.train_batch_index + batch_size)],
+                    'y_data_length': self.y_array_length[self.train_batch_index: (self.train_batch_index + batch_size)],
                    }
-            self.train_batch_index += self.batch_size
+            self.train_batch_index += batch_size
 
     def test_data(self):
         yield{
