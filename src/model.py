@@ -10,11 +10,14 @@ from tensorflow.contrib.seq2seq import AttentionWrapper, AttentionWrapperState, 
 
 from src import data_load
 
+
+batch_data = data_load.DataLoader()
+
 num_word = 26102
 embedding_dim = 128
 batch_size = 30
-max_epoch = 100
-max_iteration = 10
+max_epoch = 1000
+max_iteration = batch_data.max_sentence_length+1
 encoder_rnn_state_size = 100
 decoder_rnn_state_size = 100
 attention_num_units = 100
@@ -31,7 +34,7 @@ encoder_inputs = tf.placeholder(shape=(batch_size, None), dtype=tf.int32, name='
 encoder_lengths = tf.placeholder(shape=(batch_size,), dtype=tf.int32, name='encoder_lengths')
 # batch_size, max_time
 decoder_inputs = tf.placeholder(shape=(batch_size, None), dtype=tf.int32, name='decoder_inputs')
-decoder_lengths = tf.placeholder(shape=(batch_size,),  dtype=tf.int32, name='decoder_inputs')
+decoder_lengths = tf.placeholder(shape=(batch_size,),  dtype=tf.int32, name='decoder_lengths')
 
 encoder_inputs.set_shape([batch_size, None])
 decoder_inputs.set_shape([batch_size, None])
@@ -211,18 +214,21 @@ with tf.variable_scope('train'):
     with tf.control_dependencies([apply_gradient_op]):
         train_op = tf.no_op(name='train_step')
 
-batch_data = data_load.DataLoader()
+
 with tf.Session() as sess:
     sess.run([tf.global_variables_initializer(), tf.local_variables_initializer()])
-    for data_dict in batch_data.train_data(max_epoch):
+    for i, data_dict in enumerate(batch_data.train_data(max_epoch)):
         feed_dict = {
             encoder_inputs: data_dict['x_data'],
             encoder_lengths: data_dict['x_data_length'],
             decoder_inputs: data_dict['y_data'],
             decoder_lengths: data_dict['y_data_length'],
         }
+        # _decoder_outputs = sess.run(decoder_results['decoder_outputs'], feed_dict)
         _, decoder_result_ids_, loss_value_ = \
             sess.run([train_op, decoder_results['decoder_result_ids'], seq_loss], feed_dict)
+        if i % 10 == 0:
+            print("loss {}".format(loss_value_))
 
 
 
