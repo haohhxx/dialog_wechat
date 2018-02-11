@@ -81,19 +81,19 @@ class DataLoader(object):
                 self.train_batch_index = 0
                 break
             yield {
-                    'x_data': self.x_array[self.train_batch_index: (self.train_batch_index + batch_size)],
-                    'y_data': self.y_array[self.train_batch_index: (self.train_batch_index + batch_size)],
-                    'x_data_length': self.x_array_length[self.train_batch_index: (self.train_batch_index + batch_size)],
-                    'y_data_length': self.y_array_length[self.train_batch_index: (self.train_batch_index + batch_size)],
+                    'encoder_inputs': self.x_array[self.train_batch_index: (self.train_batch_index + batch_size)],
+                    'decoder_inputs': self.y_array[self.train_batch_index: (self.train_batch_index + batch_size)],
+                    'encoder_lengths': self.x_array_length[self.train_batch_index: (self.train_batch_index + batch_size)],
+                    'decoder_lengths': self.y_array_length[self.train_batch_index: (self.train_batch_index + batch_size)],
                    }
             self.train_batch_index += batch_size
 
     def test_data(self):
         yield{
-                'x_data': self.x_array[self.train_test_index:],
-                'y_data': self.y_array[self.train_test_index:],
-                'x_data_length': self.x_array_length[self.train_test_index:],
-                'y_data_length': self.y_array_length[self.train_test_index:],
+                'encoder_inputs': self.x_array[self.train_test_index:],
+                'decoder_inputs': self.y_array[self.train_test_index:],
+                'encoder_lengths': self.x_array_length[self.train_test_index:],
+                'decoder_lengths': self.y_array_length[self.train_test_index:],
         }
 
 # todo x_data 应该增加一个维度表示对话 最长考虑5句对话？？？？填充？？？还是一个list？？？？

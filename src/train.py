@@ -30,19 +30,10 @@ batch_size = 30
 
 
 def run_train():
-    encoder_inputs = tf.placeholder(shape=(batch_size, None), dtype=tf.int32, name='encoder_inputs')
-    decoder_inputs = tf.placeholder(shape=(batch_size, None), dtype=tf.int32, name='decoder_inputs')
-    encoder_lengths = tf.placeholder(shape=(batch_size,), dtype=tf.int32, name='encoder_lengths')
-    decoder_lengths = tf.placeholder(shape=(batch_size,), dtype=tf.int32, name='decoder_lengths')
-    encoder_inputs.set_shape([batch_size, None])
-    decoder_inputs.set_shape([batch_size, None])
-    encoder_lengths.set_shape([batch_size])
-    decoder_lengths.set_shape([batch_size])
-
     max_iteration = batch_data.max_sentence_length + 1
-    chat_model = ChatModel(max_iteration, batch_size)
-    decoder_results = chat_model.encoder_decoder_graph(encoder_inputs, encoder_lengths, decoder_inputs, decoder_lengths)
-    seq_loss = chat_model.loss(decoder_results)
+    chat_model = ChatModel(batch_size=batch_size, max_iteration=max_iteration)
+    decoder_results, seq_loss = chat_model.encoder_decoder_graph(input_batch=None)
+
     with tf.variable_scope('train'):
         train_step = tf.Variable(0, name='global_step', trainable=False)
         lr = tf.train.exponential_decay(
@@ -71,12 +62,7 @@ def run_train():
             saver.restore(sess, checkpoint)
         for epoch in range(max_epoch):
             for batch, data_dict in enumerate(batch_data.train_data(batch_size)):
-                feed_dict = {
-                    encoder_inputs: data_dict['x_data'],
-                    encoder_lengths: data_dict['x_data_length'],
-                    decoder_inputs: data_dict['y_data'],
-                    decoder_lengths: data_dict['y_data_length'],
-                }
+                feed_dict = chat_model.make_feed_dict(data_dict)
                 # _decoder_outputs = sess.run(decoder_results['decoder_outputs'], feed_dict)
                 _, decoder_result_ids_, loss_value_ = \
                     sess.run([train_op, decoder_results['decoder_result_ids'], seq_loss], feed_dict)

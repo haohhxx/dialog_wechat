@@ -13,10 +13,10 @@ from tensorflow.contrib.seq2seq import AttentionWrapper, AttentionWrapperState, 
 
 
 class ChatModel(object):
-
     def __init__(self, batch_size, max_iteration):
         self.batch_size = batch_size
         self.max_iteration = max_iteration
+        self._inputs = {}
 
     PAD = 0
     EOS = 1
@@ -30,19 +30,58 @@ class ChatModel(object):
     beam_width = 5
     minimum_learning_rate = 1e-5
 
-    def encoder_decoder_graph(self, encoder_inputs, encoder_lengths, decoder_inputs, decoder_lengths):
-        # self.encoder_inputs = tf.placeholder(shape=(self.batch_size, None), dtype=tf.int32, name='encoder_inputs')
-        # self.decoder_inputs = tf.placeholder(shape=(self.batch_size, None), dtype=tf.int32, name='decoder_inputs')
-        # self.encoder_lengths = tf.placeholder(shape=(self.batch_size,), dtype=tf.int32, name='encoder_lengths')
-        # self.decoder_lengths = tf.placeholder(shape=(self.batch_size,), dtype=tf.int32, name='decoder_lengths')
-        # self.encoder_inputs.set_shape([self.batch_size, None])
-        # self.decoder_inputs.set_shape([self.batch_size, None])
-        # self.encoder_lengths.set_shape([self.batch_size])
-        # self.decoder_lengths.set_shape([self.batch_size])
-        self.encoder_inputs = encoder_inputs
-        self.encoder_lengths = encoder_lengths
-        self.decoder_inputs = decoder_inputs
-        self.decoder_lengths = decoder_lengths
+    def _build_inputs(self, input_batch):
+        if input_batch is None:
+            self._inputs['encoder_inputs'] = tf.placeholder(
+                shape=(self.batch_size, None),  # batch_size, max_time
+                dtype=tf.int32,
+                name='encoder_inputs'
+            )
+            self._inputs['encoder_lengths'] = tf.placeholder(
+                shape=(self.batch_size,),
+                dtype=tf.int32,
+                name='encoder_lengths'
+            )
+            self._inputs['decoder_inputs'] = tf.placeholder(
+                shape=(self.batch_size, None),  # batch_size, max_time
+                dtype=tf.int32,
+                name='decoder_inputs'
+            )
+            self._inputs['decoder_lengths'] = tf.placeholder(
+                shape=(self.batch_size,),
+                dtype=tf.int32,
+                name='decoder_lengths'
+            )
+
+        else:
+            encoder_inputs, encoder_lengths, decoder_inputs, decoder_lengths = input_batch
+            encoder_inputs.set_shape([self.batch_size, None])
+            decoder_inputs.set_shape([self.batch_size, None])
+            encoder_lengths.set_shape([self.batch_size])
+            decoder_lengths.set_shape([self.batch_size])
+
+            self._inputs = {
+                'encoder_inputs': encoder_inputs,
+                'encoder_lengths': encoder_lengths,
+                'decoder_inputs': decoder_inputs,
+                'decoder_lengths': decoder_lengths
+            }
+
+        return self._inputs['encoder_inputs'], self._inputs['encoder_lengths'], \
+               self._inputs['decoder_inputs'], self._inputs['decoder_lengths']
+
+    def make_feed_dict(self, data_dict):
+        feed_dict = {}
+        for key in data_dict.keys():
+            try:
+                feed_dict[self._inputs[key]] = data_dict[key]
+            except KeyError:
+                raise ValueError('Unexpected argument in input dictionary!')
+        return feed_dict
+
+    def encoder_decoder_graph(self, input_batch):
+        encoder_inputs, encoder_lengths, decoder_inputs, decoder_lengths = self._build_inputs(input_batch)
+        # self.encoder_inputs = encoder_inputs
 
         with tf.variable_scope('word_embedding'):
             word_embedding = tf.get_variable(
@@ -52,14 +91,14 @@ class ChatModel(object):
                 dtype=tf.float32
             )
             # batch_size, max_time, embed_dims
-            encoder_input_vectors = tf.nn.embedding_lookup(word_embedding, self.encoder_inputs)
+            encoder_input_vectors = tf.nn.embedding_lookup(word_embedding, encoder_inputs)
 
         with tf.variable_scope('encoder'):
             encoder_cell = LSTMCell(self.encoder_rnn_state_size)
             (fw_output, bw_output), (fw_final_state, bw_final_state) = tf.nn.bidirectional_dynamic_rnn(
                 encoder_cell, encoder_cell,
                 encoder_input_vectors,
-                sequence_length=self.encoder_lengths,
+                sequence_length=encoder_lengths,
                 time_major=False,
                 dtype=tf.float32
             )
@@ -80,7 +119,7 @@ class ChatModel(object):
 
             with tf.variable_scope('beam_inputs'):
                 tiled_encoder_outputs = tile_batch(encoder_outputs, self.beam_width)
-                tiled_encoder_lengths = tile_batch(self.encoder_lengths, self.beam_width)
+                tiled_encoder_lengths = tile_batch(encoder_lengths, self.beam_width)
 
                 tiled_encoder_final_state_c = tile_batch(encoder_final_state.c, self.beam_width)
                 tiled_encoder_final_state_h = tile_batch(encoder_final_state.h, self.beam_width)
@@ -90,7 +129,7 @@ class ChatModel(object):
                 attention_mechanism = BahdanauAttention(
                     self.attention_num_units,
                     encoder_outputs,
-                    self.encoder_lengths,
+                    encoder_lengths,
                     name="attention_fn"
                 )
                 decoder_cell = AttentionWrapper(
@@ -99,7 +138,7 @@ class ChatModel(object):
                     attention_layer_size=self.attention_depth,
                     output_attention=True,
                 )
-                decoder_initial_state = decoder_cell.zero_state(self.batch_size, tf.float32)\
+                decoder_initial_state = decoder_cell.zero_state(self.batch_size, tf.float32) \
                     .clone(cell_state=encoder_final_state)
 
             with tf.variable_scope('attention', reuse=True):
@@ -116,8 +155,8 @@ class ChatModel(object):
                     output_attention=True
                 )
                 # beam_decoder_cell 单独的original_decoder_cell
-                tiled_decoder_initial_state = beam_decoder_cell\
-                    .zero_state(tiled_batch_size, tf.float32)\
+                tiled_decoder_initial_state = beam_decoder_cell \
+                    .zero_state(tiled_batch_size, tf.float32) \
                     .clone(cell_state=tiled_encoder_final_state)
 
             # with tf.variable_scope('word_embedding', reuse=True):
@@ -126,12 +165,12 @@ class ChatModel(object):
             with tf.variable_scope('decoder'):
                 out_func = layers_core.Dense(self.num_word, use_bias=False)
                 eoses = tf.ones([self.batch_size, 1], dtype=tf.int32) * self.EOS
-                eosed_decoder_inputs = tf.concat([eoses, self.decoder_inputs], 1)
+                eosed_decoder_inputs = tf.concat([eoses, decoder_inputs], 1)
                 embed_decoder_inputs = tf.nn.embedding_lookup(word_embedding, eosed_decoder_inputs)
 
                 training_helper = TrainingHelper(
                     embed_decoder_inputs,
-                    self.decoder_lengths + 1
+                    decoder_lengths + 1
                 )
                 decoder = BasicDecoder(
                     decoder_cell,
@@ -140,10 +179,10 @@ class ChatModel(object):
                     output_layer=out_func,
                 )
                 decoder_outputs, decoder_state, decoder_sequence_lengths = dynamic_decode(
-                            decoder,
-                            scope=tf.get_variable_scope(),
-                            maximum_iterations=self.max_iteration
-                        )
+                    decoder,
+                    scope=tf.get_variable_scope(),
+                    maximum_iterations=self.max_iteration
+                )
 
                 tf.get_variable_scope().reuse_variables()
                 start_tokens = tf.ones([self.batch_size], dtype=tf.int32) * self.EOS
@@ -172,28 +211,26 @@ class ChatModel(object):
                 'beam_decoder_state': beam_decoder_state,
                 'beam_decoder_sequence_outputs': beam_decoder_sequence_lengths
             }
-            return decoder_results
+            with tf.variable_scope('loss_target'):
+                # build decoder output, with appropriate padding and mask
+                # batch_size = batch_size
+                pads = tf.ones([self.batch_size, 1], dtype=tf.int32) * self.PAD
+                paded_decoder_inputs = tf.concat([decoder_inputs, pads], 1)
+                max_decoder_time = tf.reduce_max(decoder_lengths) + 1
+                decoder_target = paded_decoder_inputs[:, :max_decoder_time]
 
-    def loss(self, decoder_results):
-        with tf.variable_scope('loss_target'):
-            # build decoder output, with appropriate padding and mask
-            # batch_size = batch_size
-            pads = tf.ones([self.batch_size, 1], dtype=tf.int32) * self.PAD
-            paded_decoder_inputs = tf.concat([self.decoder_inputs, pads], 1)
-            max_decoder_time = tf.reduce_max(self.decoder_lengths) + 1
-            decoder_target = paded_decoder_inputs[:, :max_decoder_time]
+                decoder_eos = tf.one_hot(decoder_lengths, depth=max_decoder_time,
+                                         on_value=self.EOS, off_value=self.PAD,
+                                         dtype=tf.int32)
+                decoder_target += decoder_eos
+                decoder_loss_mask = tf.sequence_mask(decoder_lengths + 1, maxlen=max_decoder_time, dtype=tf.float32)
 
-            decoder_eos = tf.one_hot(self.decoder_lengths, depth=max_decoder_time,
-                                     on_value=self.EOS, off_value=self.PAD,
-                                     dtype=tf.int32)
-            decoder_target += decoder_eos
-            decoder_loss_mask = tf.sequence_mask(self.decoder_lengths + 1, maxlen=max_decoder_time, dtype=tf.float32)
-        with tf.variable_scope('loss'):
-            decoder_logits = decoder_results['decoder_outputs']
-            seq_loss = sequence_loss(
-                decoder_logits,
-                decoder_target,
-                decoder_loss_mask,
-                name='sequence_loss'
-            )
-            return seq_loss
+            with tf.variable_scope('loss'):
+                decoder_logits = decoder_results['decoder_outputs']
+                seq_loss = sequence_loss(
+                    decoder_logits,
+                    decoder_target,
+                    decoder_loss_mask,
+                    name='sequence_loss'
+                )
+            return decoder_results, seq_loss
