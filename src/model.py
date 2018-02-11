@@ -16,12 +16,6 @@ class ChatModel(object):
 
     def __init__(self, batch_size, max_iteration):
         self.batch_size = batch_size
-
-        self.encoder_inputs = tf.placeholder(shape=(self.batch_size, None), dtype=tf.int32, name='encoder_inputs')
-        self.decoder_inputs = tf.placeholder(shape=(self.batch_size, None), dtype=tf.int32, name='decoder_inputs')
-        self.encoder_lengths = tf.placeholder(shape=(self.batch_size,), dtype=tf.int32, name='encoder_lengths')
-        self.decoder_lengths = tf.placeholder(shape=(self.batch_size,), dtype=tf.int32, name='decoder_lengths')
-
         self.max_iteration = max_iteration
 
     PAD = 0
@@ -36,11 +30,19 @@ class ChatModel(object):
     beam_width = 5
     minimum_learning_rate = 1e-5
 
-    def encoder_decoder_graph(self):
-        self.encoder_inputs.set_shape([self.batch_size, None])
-        self.decoder_inputs.set_shape([self.batch_size, None])
-        self.encoder_lengths.set_shape([self.batch_size])
-        self.decoder_lengths.set_shape([self.batch_size])
+    def encoder_decoder_graph(self, encoder_inputs, encoder_lengths, decoder_inputs, decoder_lengths):
+        # self.encoder_inputs = tf.placeholder(shape=(self.batch_size, None), dtype=tf.int32, name='encoder_inputs')
+        # self.decoder_inputs = tf.placeholder(shape=(self.batch_size, None), dtype=tf.int32, name='decoder_inputs')
+        # self.encoder_lengths = tf.placeholder(shape=(self.batch_size,), dtype=tf.int32, name='encoder_lengths')
+        # self.decoder_lengths = tf.placeholder(shape=(self.batch_size,), dtype=tf.int32, name='decoder_lengths')
+        # self.encoder_inputs.set_shape([self.batch_size, None])
+        # self.decoder_inputs.set_shape([self.batch_size, None])
+        # self.encoder_lengths.set_shape([self.batch_size])
+        # self.decoder_lengths.set_shape([self.batch_size])
+        self.encoder_inputs = encoder_inputs
+        self.encoder_lengths = encoder_lengths
+        self.decoder_inputs = decoder_inputs
+        self.decoder_lengths = decoder_lengths
 
         with tf.variable_scope('word_embedding'):
             word_embedding = tf.get_variable(
@@ -195,10 +197,3 @@ class ChatModel(object):
                 name='sequence_loss'
             )
             return seq_loss
-
-
-
-
-
-
-
