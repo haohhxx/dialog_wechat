@@ -37,7 +37,7 @@ class DataLoader(object):
     def __init__(self
                  , content_path=r'..\corpus\dialog_datas\sentence_dialog.txt'
                  , vec_bin_path=r'..\corpus\dialog_datas\sentence_vocbulart.txt.phrases.bin'
-                 , voc_path=r'D:\pycharm_workspace\dialog_wechat\corpus\dialog_datas\voc'
+                 , voc_path=r'..\corpus\dialog_datas\voc'
                  ):
 
         # self.word_to_id, self.id_to_word, self.vectors = load_w2vec(vec_bin_path)

@@ -1,6 +1,6 @@
-f = open(r'D:\pycharm_workspace\dialog_wechat\corpus\dialog_datas\sentence_dialog.txt'
+f = open(r'../../corpus/dialog_datas/sentence_dialog.txt'
          , 'r', encoding='utf-8')
-fw = open(r'D:\pycharm_workspace\dialog_wechat\corpus\dialog_datas\voc', 'w'
+fw = open(r'../../corpus/dialog_datas/voc', 'w'
           , encoding='utf-8')
 
 wordset = set()
@@ -11,7 +11,4 @@ for line in f.readlines():
             wordset.add(word)
 
 for i, word in enumerate(wordset):
-    fw.write(word +' '+str(i) +'\n')
-
-
-
+    fw.write(word + ' ' + str(i) + '\n')
