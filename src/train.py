@@ -27,7 +27,7 @@ minimum_learning_rate = 1e-5
 
 
 batch_data = data_load.DataLoader(content_path=content_path, voc_path=voc_path)
-batch_size = 2
+batch_size = 1
 
 
 def run_train():
@@ -80,7 +80,7 @@ def run_train():
                 if epoch % 10 == 0:
                     writer.add_summary(train_summary_op_, epoch)
                     print('Epoch: %d, batch: %d, training loss: %.6f' % (epoch, batch, loss_value_))
-            if epoch % 6 == 0:
+            if epoch % 10 == 0:
                 saver.save(sess, os.path.join(model_dir, 'chat'), global_step=epoch)
 
 

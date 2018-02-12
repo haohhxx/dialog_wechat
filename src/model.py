@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
-
 import tensorflow as tf
 from tensorflow.python.layers import core as layers_core
 from tensorflow.contrib.rnn import LSTMCell, LSTMStateTuple, GRUCell
@@ -13,16 +11,15 @@ from tensorflow.contrib.seq2seq import AttentionWrapper, AttentionWrapperState, 
 
 
 class ChatModel(object):
-    def __init__(self, batch_size, max_iteration):
+    def __init__(self, batch_size, max_iteration, num_word=26102):
         self.batch_size = batch_size
         self.max_iteration = max_iteration
+        self.num_word = num_word
         self._inputs = {}
 
     PAD = 0
     EOS = 1
-    num_word = 26102
     embedding_dim = 128
-    max_epoch = 1000
     encoder_rnn_state_size = 100
     decoder_rnn_state_size = 100
     attention_num_units = 100
@@ -67,8 +64,7 @@ class ChatModel(object):
                 'decoder_lengths': decoder_lengths
             }
 
-        return self._inputs['encoder_inputs'], self._inputs['encoder_lengths'], \
-               self._inputs['decoder_inputs'], self._inputs['decoder_lengths']
+        return self._inputs['encoder_inputs'], self._inputs['encoder_lengths'], self._inputs['decoder_inputs'], self._inputs['decoder_lengths']
 
     def make_feed_dict(self, data_dict):
         feed_dict = {}
@@ -233,4 +229,5 @@ class ChatModel(object):
                     decoder_loss_mask,
                     name='sequence_loss'
                 )
+            # self.decoder_results = decoder_results
             return decoder_results, seq_loss
