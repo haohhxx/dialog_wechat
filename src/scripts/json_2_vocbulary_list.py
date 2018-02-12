@@ -29,7 +29,7 @@ with open(json_path, 'r') as json_file, \
                     dialog_line = 'null'
                     break
                 cut_sentence = list(jieba.cut(sentence))
-                if len(cut_sentence) >= 1:
+                if len(cut_sentence) >= 2:
                     dialog_line += ((' '.join(cut_sentence)) + '\t')
 
             if dialog_line not in dialog_set:

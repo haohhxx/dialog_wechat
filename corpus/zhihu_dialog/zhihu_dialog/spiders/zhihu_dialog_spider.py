@@ -151,3 +151,9 @@ class ZhihuloginSpider(scrapy.Spider):
             for url in self.start_urls:
                 yield scrapy.Request(url=url, headers=self.headers, dont_filter=True
                                      , callback=self.parse)
+
+        else:
+            t = str(int(time.time() * 1000))
+            captcha_url = 'https://www.zhihu.com/captcha.gif?r=' + t + '&type=login&lang=en'
+            yield scrapy.Request(url=captcha_url, headers=self.headers, callback=self.parser_captcha)
+
