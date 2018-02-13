@@ -38,7 +38,7 @@ def load_model():
         checkpoint = tf.train.latest_checkpoint(model_dir)
         saver.restore(sess, checkpoint)
         while 1:
-            x_str = str(input("in\n"))
+            x_str = str(input("in x data:\n"))
             if x_str == "exit":
                 break
             feed_dict = build_dict(x_str=x_str, chat_model=chat_model)
@@ -46,8 +46,10 @@ def load_model():
                 sess.run([decoder_results['beam_decoder_result_ids'],
                           decoder_results['beam_decoder_sequence_outputs']],
                          feed_dict)
-            for wid in beam_decoder_result_ids_[0]:
-                print(id_to_word[wid])
+            out = [id_to_word[wid] for wid in beam_decoder_result_ids_[0][0]]
+            print(out)
+            print(beam_decoder_result_ids_)
+            print(beam_decoder_sequence_outputs_)
 
 
 def build_dict(x_str, chat_model):
