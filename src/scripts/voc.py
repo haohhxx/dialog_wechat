@@ -8,7 +8,7 @@ for line in f.readlines():
     sentences = line.split('\t')
     for sentence in sentences:
         for word in sentence.split(' '):
-            wordset.add(word)
+            wordset.add(word.strip())
 
 for i, word in enumerate(wordset):
     fw.write(word + ' ' + str(i) + '\n')

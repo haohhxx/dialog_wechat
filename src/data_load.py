@@ -38,7 +38,7 @@ class DataLoader(object):
                  , content_path=r'..\corpus\dialog_datas\sentence_dialog.txt'
                  , vec_bin_path=r'..\corpus\dialog_datas\sentence_vocbulart.txt.phrases.bin'
                  , voc_path=r'..\corpus\dialog_datas\voc'
-                 ):
+                 , train_test=1):
 
         # self.word_to_id, self.id_to_word, self.vectors = load_w2vec(vec_bin_path)
         self.word_to_id, self.id_to_word = load_word_vocbulary(voc_path)
@@ -50,9 +50,11 @@ class DataLoader(object):
         self.x_array_length = np.zeros([len(self.lines)], dtype=np.int32)
         self.y_array = np.zeros([len(self.lines), self.max_sentence_length], dtype=np.int32)
         self.y_array_length = np.zeros([len(self.lines)], dtype=np.int32)
-        self.train_test_index = int(len(self.lines)/2)
+        self.train_test_index = int(len(self.lines)/train_test)
         self.test_batch_index = self.train_test_index
         self.load()
+        # 结束的标志
+        self.it_stop_index = len(self.lines)
 
     def statistic_voc(self):
         with open(self.content_path, 'r', encoding='utf-8') as f:
@@ -65,19 +67,20 @@ class DataLoader(object):
     def load(self):
         for i, line in enumerate(self.lines):
             ls = line.split('\t')
-            if len(ls) > 1:
-                words_x = ls[0].split(" ")
-                words_y = ls[1].split(" ")
-                self.x_array_length[i] = len(words_x)
-                for j, word in enumerate(words_x):
-                    self.x_array[i, j] = self.word_to_id[word.strip()]
-                self.y_array_length[i] = len(words_y)
-                for j, word in enumerate(words_y):
-                    self.y_array[i, j] = self.word_to_id[word.strip()]
+            if len(ls) < 2:
+                print(str(len(line))+"---"+line)
+            words_x = ls[0].split(" ")
+            words_y = ls[1].split(" ")
+            self.x_array_length[i] = len(words_x)
+            for j, word in enumerate(words_x):
+                self.x_array[i, j] = self.word_to_id[word.strip()]
+            self.y_array_length[i] = len(words_y)
+            for j, word in enumerate(words_y):
+                self.y_array[i, j] = self.word_to_id[word.strip()]
 
     def train_data(self, batch_size):
         while 1:
-            if self.train_batch_index > self.train_test_index:
+            if self.train_batch_index > self.it_stop_index - batch_size:
                 self.train_batch_index = 0
                 break
             yield {
@@ -97,3 +100,6 @@ class DataLoader(object):
         }
 
 # todo x_data 应该增加一个维度表示对话 最长考虑5句对话？？？？填充？？？还是一个list？？？？
+
+if __name__ == '__main__':
+    data = DataLoader()

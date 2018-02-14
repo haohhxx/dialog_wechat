@@ -10,6 +10,7 @@ from src.model import ChatModel
 
 model_dir = r'..\model'
 content_path = r'..\corpus\dialog_datas\mini.sentence_dialog.txt'
+content_path = r'..\corpus\dialog_datas\sentence_dialog.txt'
 voc_path = r'..\corpus\dialog_datas\voc'
 num_word = 26102
 embedding_dim = 128
@@ -27,7 +28,7 @@ minimum_learning_rate = 1e-5
 
 
 batch_data = data_load.DataLoader(content_path=content_path, voc_path=voc_path)
-batch_size = 32
+batch_size = 16
 
 
 def run_train():
@@ -77,10 +78,10 @@ def run_train():
                 # _decoder_outputs = sess.run(decoder_results['decoder_outputs'], feed_dict)
                 _, decoder_result_ids_, loss_value_, train_summary_op_ = \
                     sess.run([train_op, decoder_results['decoder_result_ids'], seq_loss, train_summary_op], feed_dict)
-                if epoch % 10 == 0:
+                if epoch % 4 == 0:
                     writer.add_summary(train_summary_op_, epoch)
                     print('Epoch: %d, batch: %d, training loss: %.6f' % (epoch, batch, loss_value_))
-            if epoch % 1 == 0:
+            if epoch % 4 == 0:
                 saver.save(sess, os.path.join(model_dir, 'chat'), global_step=epoch)
 
 
