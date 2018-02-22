@@ -33,7 +33,8 @@ batch_size = 128
 
 def run_train():
     max_iteration = batch_data.max_sentence_length + 1
-    chat_model = ChatModel(batch_size=batch_size, max_iteration=max_iteration, embedding_dim=embedding_dim)
+    chat_model = ChatModel(batch_size=batch_size, max_iteration=max_iteration,
+                           embedding_dim=embedding_dim)
     decoder_results, seq_loss = chat_model.encoder_decoder_graph(input_batch=None)
 
     loss_summary = tf.summary.scalar("loss", seq_loss)
