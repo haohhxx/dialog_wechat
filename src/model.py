@@ -11,15 +11,15 @@ from tensorflow.contrib.seq2seq import AttentionWrapper, AttentionWrapperState, 
 
 
 class ChatModel(object):
-    def __init__(self, batch_size, max_iteration, num_word=26102):
+    def __init__(self, batch_size, max_iteration, num_word=26102, embedding_dim=128):
         self.batch_size = batch_size
         self.max_iteration = max_iteration
         self.num_word = num_word
         self._inputs = {}
+        self.embedding_dim = embedding_dim
 
     PAD = 0
     EOS = 1
-    embedding_dim = 128
     encoder_rnn_state_size = 100
     decoder_rnn_state_size = 100
     attention_num_units = 100

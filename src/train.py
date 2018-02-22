@@ -13,7 +13,7 @@ content_path = r'..\corpus\dialog_datas\mini.sentence_dialog.txt'
 content_path = r'..\corpus\dialog_datas\sentence_dialog.txt'
 voc_path = r'..\corpus\dialog_datas\voc'
 num_word = 26102
-embedding_dim = 128
+embedding_dim = 64
 max_epoch = 1000
 
 encoder_rnn_state_size = 100
@@ -28,12 +28,12 @@ minimum_learning_rate = 1e-5
 
 
 batch_data = data_load.DataLoader(content_path=content_path, voc_path=voc_path)
-batch_size = 16
+batch_size = 128
 
 
 def run_train():
     max_iteration = batch_data.max_sentence_length + 1
-    chat_model = ChatModel(batch_size=batch_size, max_iteration=max_iteration)
+    chat_model = ChatModel(batch_size=batch_size, max_iteration=max_iteration, embedding_dim=embedding_dim)
     decoder_results, seq_loss = chat_model.encoder_decoder_graph(input_batch=None)
 
     loss_summary = tf.summary.scalar("loss", seq_loss)
