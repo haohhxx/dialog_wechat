@@ -28,7 +28,9 @@ minimum_learning_rate = 1e-5
 
 
 batch_data = data_load.DataLoader(content_path=content_path, voc_path=voc_path)
-batch_size = 128
+word_to_id = batch_data.word_to_id
+id_to_word = batch_data.id_to_word
+batch_size = 64
 
 
 def run_train():
@@ -76,6 +78,8 @@ def run_train():
             train_data = batch_data.train_data(batch_size)
             for batch, data_dict in enumerate(train_data):
                 feed_dict = chat_model.make_feed_dict(data_dict)
+
+                see_data(data_dict)
                 # _decoder_outputs = sess.run(decoder_results['decoder_outputs'], feed_dict)
                 _, decoder_result_ids_, loss_value_, train_summary_op_ = \
                     sess.run([train_op, decoder_results['decoder_result_ids'], seq_loss, train_summary_op], feed_dict)
@@ -84,6 +88,18 @@ def run_train():
                     print('Epoch: %d, batch: %d, training loss: %.6f' % (epoch, batch, loss_value_))
             if epoch % 4 == 0:
                 saver.save(sess, os.path.join(model_dir, 'chat'), global_step=epoch)
+
+
+def see_data(data_dict):
+    encoder_inputs = data_dict['encoder_inputs']
+    decoder_inputs = data_dict['decoder_inputs']
+    encoder_lengths = data_dict['encoder_lengths']
+    decoder_lengths = data_dict['decoder_lengths']
+
+    # encoder_inputs = encoder_inputs[:encoder_lengths]
+    # decoder_inputs = decoder_inputs[:decoder_lengths]
+    print([id_to_word[wid] for wid in encoder_inputs[0]])
+    print([id_to_word[wid] for wid in decoder_inputs[0]])
 
 
 def main(_):

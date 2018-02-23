@@ -18,12 +18,16 @@ def load_w2vec(vec_bin_path):
 
 def load_word_vocbulary(voc_path):
     with open(voc_path, 'r', encoding='utf-8') as voc_file:
-        word2id = {'': -1}
-        id2word = {-1: ''}
+        word2id = {'__UNK__': -1}
+        id2word = {-1: '__UNK__'}
+        word2id = {'__EOS__': 1}
+        id2word = {1: '__EOS__'}
+        word2id = {'__PAD__': 0}
+        id2word = {0: '__PAD__'}
         for i, j in enumerate(voc_file.readlines()):
             j = j.split(' ')[0]
-            id2word[i] = j
-            word2id[j] = i
+            id2word[i+2] = j
+            word2id[j] = i+2
         return word2id, id2word
 
 
@@ -61,8 +65,9 @@ class DataLoader(object):
             self.lines = f.readlines()
             for line in self.lines:
                 words = line.split(' ')
-                if self.max_sentence_length < len(words):
-                    self.max_sentence_length = len(words)
+                len_word = len(words)+1
+                if self.max_sentence_length < len_word:
+                    self.max_sentence_length = len_word
 
     def load(self):
         for i, line in enumerate(self.lines):
@@ -74,9 +79,11 @@ class DataLoader(object):
             self.x_array_length[i] = len(words_x)
             for j, word in enumerate(words_x):
                 self.x_array[i, j] = self.word_to_id[word.strip()]
+                self.x_array[i, j+1] = self.word_to_id['__EOS__']
             self.y_array_length[i] = len(words_y)
             for j, word in enumerate(words_y):
                 self.y_array[i, j] = self.word_to_id[word.strip()]
+                self.y_array[i, j + 1] = self.word_to_id['__EOS__']
 
     def train_data(self, batch_size):
         while 1:

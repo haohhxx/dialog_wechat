@@ -18,8 +18,8 @@ class ChatModel(object):
         self._inputs = {}
         self.embedding_dim = embedding_dim
 
-    PAD = 0
-    EOS = 1
+    PAD = 0 # 填充标记
+    EOS = 1 # 结束标记
     encoder_rnn_state_size = 100
     decoder_rnn_state_size = 100
     attention_num_units = 100

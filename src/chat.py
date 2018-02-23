@@ -7,7 +7,7 @@ import jieba
 from src import data_load
 from src.model import ChatModel
 
-model_dir = r'..\model.0.01'
+model_dir = r'..\model.bak'
 content_path = r'..\corpus\dialog_datas\sentence_dialog.txt'
 voc_path = r'..\corpus\dialog_datas\voc'
 num_word = 26102
@@ -49,9 +49,19 @@ def load_model():
 
                           ],
                          feed_dict)
-            out = [id_to_word[wids[3]] for wids in beam_decoder_result_ids_[0]]
-            print(decoder_outputs_)
+            out = [id_to_word[wids[0]] for wids in beam_decoder_result_ids_[0]]
             print(out)
+            out = [id_to_word[wids[1]] for wids in beam_decoder_result_ids_[0]]
+            print(out)
+            out = [id_to_word[wids[2]] for wids in beam_decoder_result_ids_[0]]
+            print(out)
+            out = [id_to_word[wids[3]] for wids in beam_decoder_result_ids_[0]]
+            print(out)
+            out = [id_to_word[wids[4]] for wids in beam_decoder_result_ids_[0]]
+            print(out)
+
+            # print(decoder_outputs_)
+            # print(out)
             print(beam_decoder_result_ids_)
             print(beam_decoder_sequence_outputs_)
 
