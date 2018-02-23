@@ -5,6 +5,11 @@ import word2vec
 import numpy as np
 
 
+__PAD__ = 0
+__EOS__ = 1
+__UNK__ = -1
+
+
 def load_w2vec(vec_bin_path):
     w2v = word2vec.load(vec_bin_path)
     vectors = w2v.vectors
@@ -18,12 +23,8 @@ def load_w2vec(vec_bin_path):
 
 def load_word_vocbulary(voc_path):
     with open(voc_path, 'r', encoding='utf-8') as voc_file:
-        word2id = {'__UNK__': -1}
-        id2word = {-1: '__UNK__'}
-        word2id = {'__EOS__': 1}
-        id2word = {1: '__EOS__'}
-        word2id = {'__PAD__': 0}
-        id2word = {0: '__PAD__'}
+        word2id = {'__PAD__': __PAD__, '__EOS__': __EOS__, '__UNK__': __UNK__}
+        id2word = {__PAD__: '__PAD__', __EOS__: '__EOS__', __UNK__: '__UNK__'}
         for i, j in enumerate(voc_file.readlines()):
             j = j.split(' ')[0]
             id2word[i+2] = j
@@ -78,11 +79,11 @@ class DataLoader(object):
             words_y = ls[1].split(" ")
             self.x_array_length[i] = len(words_x)
             for j, word in enumerate(words_x):
-                self.x_array[i, j] = self.word_to_id[word.strip()]
+                self.x_array[i, j] = self.word_to_id.get(word.strip(), '__UNK__')
                 self.x_array[i, j+1] = self.word_to_id['__EOS__']
             self.y_array_length[i] = len(words_y)
             for j, word in enumerate(words_y):
-                self.y_array[i, j] = self.word_to_id[word.strip()]
+                self.y_array[i, j] = self.word_to_id.get(word.strip(), '__UNK__')
                 self.y_array[i, j + 1] = self.word_to_id['__EOS__']
 
     def train_data(self, batch_size):
