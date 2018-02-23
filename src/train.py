@@ -12,7 +12,7 @@ model_dir = r'..\model'
 content_path = r'..\corpus\dialog_datas\mini.sentence_dialog.txt'
 content_path = r'..\corpus\dialog_datas\sentence_dialog.txt'
 voc_path = r'..\corpus\dialog_datas\voc'
-num_word = 26102
+
 embedding_dim = 64
 max_epoch = 1000
 
@@ -31,11 +31,12 @@ batch_data = data_load.DataLoader(content_path=content_path, voc_path=voc_path)
 word_to_id = batch_data.word_to_id
 id_to_word = batch_data.id_to_word
 batch_size = 32
+num_word = len(id_to_word)
 
 
 def run_train():
     max_iteration = batch_data.max_sentence_length + 1
-    chat_model = ChatModel(batch_size=batch_size, max_iteration=max_iteration,
+    chat_model = ChatModel(batch_size=batch_size, max_iteration=max_iteration, num_word=num_word,
                            embedding_dim=embedding_dim)
     decoder_results, seq_loss = chat_model.encoder_decoder_graph(input_batch=None)
 
@@ -79,7 +80,7 @@ def run_train():
             for batch, data_dict in enumerate(train_data):
                 feed_dict = chat_model.make_feed_dict(data_dict)
 
-                see_data(data_dict)
+                # see_data(data_dict)
                 # _decoder_outputs = sess.run(decoder_results['decoder_outputs'], feed_dict)
                 _, decoder_result_ids_, loss_value_, train_summary_op_ = \
                     sess.run([train_op, decoder_results['decoder_result_ids'], seq_loss, train_summary_op], feed_dict)
