@@ -5,7 +5,8 @@ import tensorflow as tf
 import jieba
 
 from src import data_load
-from src.model import ChatModel
+from src.model.model_atten import ChatModel
+
 
 model_dir = r'..\model.bak'
 content_path = r'..\corpus\dialog_datas\sentence_dialog.txt'
@@ -29,7 +30,7 @@ max_iteration = batch_data.max_sentence_length + 1
 
 
 def load_model():
-    chat_model = ChatModel(batch_size=batch_size, max_iteration=max_iteration)
+    chat_model = ChatModel(batch_size=batch_size, max_iteration=max_iteration, num_word=num_word)
     decoder_results, seq_loss = chat_model.encoder_decoder_graph(input_batch=None)
     saver = tf.train.Saver(tf.global_variables())
     with tf.Session() as sess:

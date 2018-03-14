@@ -5,8 +5,8 @@ import os
 import tensorflow as tf
 
 from src import data_load
-from src.model import ChatModel
-
+from src.model.model_atten import ChatModel as ChatModelBirnnAtten
+from src.model.model_birnn import ChatModel as ChatModelBirnn
 
 model_dir = r'..\model'
 content_path = r'..\corpus\dialog_datas\mini.sentence_dialog.txt'
@@ -26,18 +26,17 @@ decay_steps = 1e4
 decay_factor = 0.3
 minimum_learning_rate = 1e-5
 
-
 batch_data = data_load.DataLoader(content_path=content_path, voc_path=voc_path)
 word_to_id = batch_data.word_to_id
 id_to_word = batch_data.id_to_word
-batch_size = 24
+batch_size = 32
 num_word = len(id_to_word)
 
 
 def run_train():
     max_iteration = batch_data.max_sentence_length + 1
-    chat_model = ChatModel(batch_size=batch_size, max_iteration=max_iteration, num_word=num_word,
-                           embedding_dim=embedding_dim)
+    chat_model = ChatModelBirnn(batch_size=batch_size, max_iteration=max_iteration, num_word=num_word,
+                                embedding_dim=embedding_dim)
     decoder_results, seq_loss = chat_model.encoder_decoder_graph(input_batch=None)
 
     loss_summary = tf.summary.scalar("loss", seq_loss)
@@ -105,6 +104,7 @@ def see_data(data_dict):
 
 def main(_):
     run_train()
+
 
 if __name__ == '__main__':
     tf.app.run()
