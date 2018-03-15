@@ -70,13 +70,17 @@ class DataLoader(object):
                 if self.max_sentence_length < len_word:
                     self.max_sentence_length = len_word
 
+    # !!!!!!!!!!!!!!!!!!
+    # 截断了对话的长度。每个句子只要一百字符
     def load(self):
         for i, line in enumerate(self.lines):
             ls = line.split('\t')
             if len(ls) < 2:
                 print(str(len(line))+"---"+line)
             words_x = ls[0].split(" ")
+            words_x = words_x[:100]
             words_y = ls[1].split(" ")
+            words_y = words_y[:100]
             self.x_array_length[i] = len(words_x)
             for j, word in enumerate(words_x):
                 self.x_array[i, j] = self.word_to_id.get(word.strip(), '__UNK__')

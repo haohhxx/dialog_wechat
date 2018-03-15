@@ -29,7 +29,7 @@ minimum_learning_rate = 1e-5
 batch_data = data_load.DataLoader(content_path=content_path, voc_path=voc_path)
 word_to_id = batch_data.word_to_id
 id_to_word = batch_data.id_to_word
-batch_size = 32
+batch_size = 64
 num_word = len(id_to_word)
 
 

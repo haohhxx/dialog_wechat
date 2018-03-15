@@ -5,32 +5,27 @@ import tensorflow as tf
 import jieba
 
 from src import data_load
-from src.model.model_atten import ChatModel
+from src.model.model_atten import ChatModel as ChatModelBirnnAtten
+from src.model.model_birnn import ChatModel as ChatModelBirnn
 
-
-model_dir = r'..\model.bak'
+model_dir = r'..\model'
 content_path = r'..\corpus\dialog_datas\sentence_dialog.txt'
 voc_path = r'..\corpus\dialog_datas\voc'
-num_word = 26102
-embedding_dim = 128
-max_epoch = 1000
 
-encoder_rnn_state_size = 100
-decoder_rnn_state_size = 100
-attention_num_units = 100
-attention_depth = 100
-beam_width = 5
+embedding_dim = 64
 
 batch_data = data_load.DataLoader(content_path=content_path, voc_path=voc_path)
 word_to_id = batch_data.word_to_id
 id_to_word = batch_data.id_to_word
 
+num_word = len(id_to_word)
 batch_size = 1
 max_iteration = batch_data.max_sentence_length + 1
 
 
 def load_model():
-    chat_model = ChatModel(batch_size=batch_size, max_iteration=max_iteration, num_word=num_word)
+    chat_model = ChatModelBirnn(batch_size=batch_size, max_iteration=max_iteration, num_word=num_word,
+                                embedding_dim=embedding_dim)
     decoder_results, seq_loss = chat_model.encoder_decoder_graph(input_batch=None)
     saver = tf.train.Saver(tf.global_variables())
     with tf.Session() as sess:
