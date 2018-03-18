@@ -66,6 +66,7 @@ class DataLoader(object):
             self.lines = f.readlines()
             for line in self.lines:
                 words = line.split(' ')
+                words = words[:100]
                 len_word = len(words)+1
                 if self.max_sentence_length < len_word:
                     self.max_sentence_length = len_word

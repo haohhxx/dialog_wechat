@@ -37,12 +37,12 @@ def load_model():
             if x_str == "exit":
                 break
             feed_dict = build_dict(x_str=x_str, chat_model=chat_model)
+            print(feed_dict)
             decoder_outputs_, beam_decoder_result_ids_, beam_decoder_sequence_outputs_,  = \
                 sess.run([
                           decoder_results['decoder_outputs'],
                           decoder_results['beam_decoder_result_ids'],
                           decoder_results['beam_decoder_sequence_outputs'],
-
                           ],
                          feed_dict)
             out = [id_to_word[wids[0]] for wids in beam_decoder_result_ids_[0]]
