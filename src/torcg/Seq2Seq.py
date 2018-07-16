@@ -99,46 +99,42 @@ class DecoderRNNFeed(nn.Module):
         return decoder_outputs, hidden, decoder_attentions
 
 
+class EncoderRNN(nn.Module):
+    def __init__(self, vocab, h_dim, device):
+        super(EncoderRNN, self).__init__()
+        self.h_dim = h_dim
+        self.device = device
+        self.embeded = nn.Embedding(vocab.size(), vocab.embed_dim)
+        self.embeded.weight = nn.Parameter(torch.FloatTensor(vocab.embeddings))
+        self.lstm = nn.LSTM(vocab.embed_dim, h_dim, batch_first=False, bidirectional=True, bias=True,)
 
-class RnnPo(nn.Module):
-    def __init__(self, vocab, hidden_size, dropout=0.3, max_length=100):
+    def init_hidden(self, b_size):
+        h0 = torch.zeros(1 * 2, b_size, self.h_dim, device=self.device)
+        c0 = torch.zeros(1 * 2, b_size, self.h_dim, device=self.device)
+        return (h0, c0)
 
-        super(RnnPo, self).__init__()
-        self.hidden_size = hidden_size
-        self.dropout = nn.Dropout(dropout)
+    def forward(self, sentence):
+        emb = self.embeded(sentence)
+        packed_emb = emb.permute(1, 0, 2)
+        out = self.lstm(packed_emb)[0].permute(1, 2, 0)  # batch max encode
+        # out = out[:, :, :self.h_dim] + out[:, :, self.h_dim:]  # 前后段求和
+        return out
 
-        self.encoder = EncoderRNNFeed(vocab, hidden_size, max_length=max_length)
-        self.decoder = DecoderRNNFeed(vocab, hidden_size, output_size=hidden_size, max_length=max_length)
 
-        self.out_l = nn.Linear(hidden_size, 1)
-        self.out_2 = nn.Linear(1, 2)
+class Attn(nn.Module):
+    def __init__(self, h_dim):
+        super(Attn, self).__init__()
+        self.h_dim = h_dim
+        self.main = nn.Sequential(
+            nn.Linear(h_dim, h_dim),  # 24
+            nn.ReLU(True),
+            nn.Linear(h_dim, 1)
+        )
 
-    def forward(self, input_q1, input_q2):
-        batch_size = input_q1.shape[0]
-        hidden_q1 = torch.zeros(1, batch_size, self.hidden_size, device=device)
-        hidden_q2 = torch.zeros(1, batch_size, self.hidden_size, device=device)
-        encoder_out_q1, out_hidden_q1 = self.encoder(input_q1, hidden_q1, batch_size)
-        encoder_out_q2, out_hidden_q2 = self.encoder(input_q2, hidden_q2, batch_size)
-
-        decoder_output_q1, dncoder_hidden_q1, decoder_attentions_q1 = \
-            self.decoder(input_q2, out_hidden_q1, encoder_out_q1, batch_size)
-        decoder_output_q2, dncoder_hidden_q2, decoder_attentions_q2 = \
-            self.decoder(input_q1, out_hidden_q2, encoder_out_q2, batch_size)
-
-        # outputs = pout.view(input_q1.shape[0], 1)
-        # outputs = F.pairwise_distance(q1_out, q2_out).view(input_q1.shape[0], 1)
-        # batch * maxlen * hidden
-        decoder_output_q1 = self.out_l(decoder_output_q1)[:, :, 0]
-        decoder_output_q2 = self.out_l(decoder_output_q2)[:, :, 0]
-
-        outputs = F.pairwise_distance(decoder_output_q1, decoder_output_q2).view(input_q1.shape[0], 1)
-
-        # outputs = torch.cat((decoder_output_q1, decoder_output_q2), dim=1)
-        # batch * maxlen * hidden * 2
-        # outputs = self.conv(outputs)
-        outputs = self.out_2(outputs)
-        outputs = self.dropout(outputs)
-        soft_outputs = F.softmax(outputs, dim=-1)
-        return soft_outputs
-
+    def forward(self, encoder_outputs):
+        b_size = encoder_outputs.size(0)
+        encoder_outputs = encoder_outputs.view(-1, self.h_dim)
+        attn_ene = self.main(encoder_outputs)  # (b, s, h) -> (b * s, 1)
+        attn_ene = attn_ene.view(b_size, -1)
+        return F.softmax(attn_ene, dim=1).unsqueeze(2)  # (b*s, 1) -> (b, s, 1)
 

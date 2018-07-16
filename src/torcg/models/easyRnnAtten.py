@@ -219,3 +219,25 @@ class RnnPo(nn.Module):
         return soft_outputs
 
 
+class EncoderRNN(nn.Module):
+    def __init__(self, vocab, hidden_size, max_length, nub_layzers=1):
+        super(EncoderRNN, self).__init__()
+
+    def forward(self, input, hidden, batch_size):
+        embedded = self.embedding(input)
+        encoder_output = torch.zeros(batch_size, 1, self.hidden_size, device='cuda')
+        # encoder_output = torch.zeros(64, self.max_length, self.hidden_size, device='cuda')
+
+        for i, emb_t in enumerate(embedded.split(1, dim=1)):
+            output_t, hidden = self.rnn(emb_t, hidden)
+            # index = torch.LongTensor(i).cuda()
+            # encoder_output = encoder_output.scatter_(1, index, output_t)
+            # index_fill_
+            # index = torch.LongTensor(i).cuda()
+            # scatter_
+
+            encoder_output = torch.cat((encoder_output, output_t), dim=1)
+            # encoder_output[-1, i] = output_t
+            # encoder_output
+        encoder_output = encoder_output[:, 1:]
+        return encoder_output, hidden
