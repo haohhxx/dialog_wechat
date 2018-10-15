@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 import numpy as np
 
-from .vocab import Vocab
+from .  vocab import Vocab
 
 
 class DialogPairDataSet(Dataset):
@@ -21,11 +21,12 @@ class DialogPairDataSet(Dataset):
 
     def __getitem__(self, index):
         eos_token_id = self.vocab.term2id[self.vocab.eos_term]
+        sos_token_id = self.vocab.term2id[self.vocab.sos_term]
         max_length = self.max_length
 
         def pad_que(que_line):
-            que_line = que_line[:max_length-1]
-            que_line.append(eos_token_id)
+            que_line = sos_token_id + que_line[:max_length-2] + eos_token_id
+
             que_line_pad = np.zeros(max_length, dtype=np.int64)
             for i, tid in enumerate(np.asarray(que_line, dtype=np.int64)):
                 que_line_pad[i] = tid
@@ -44,15 +45,7 @@ class DialogPairDataSet(Dataset):
 
 class DialogPairData:
 
-    def __init__(self, train_file, pre_train_embedding, batch_size=32, max_length=100, line_nub=-1):
-        """
-        文本关系判断数据集
-
-        包含 doc1 doc2 target
-
-        :param batch_size:
-        :param max_length:
-        """
+    def __init__(self, train_file, pre_train_embedding, batch_size=32, max_length=100, line_nub=None):
         vocab = Vocab(lower=True)
 
         def add2vocab(ls):
@@ -68,8 +61,9 @@ class DialogPairData:
             for line in lines:
                 ls = line.split("\t")
                 add2vocab(ls)
-                src.append(ls[0])
-                target.append(ls[1])
+                for did in range(1, len(ls)):
+                    src.append(ls[did-1])
+                    target.append(ls[did])
             return src, target
 
         with open(train_file, 'r', encoding='utf-8') as csv_file:

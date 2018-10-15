@@ -17,7 +17,7 @@ from sklearn.metrics import f1_score, accuracy_score, classification_report
 from src.torcg.pair_data import DialogPairData
 
 log_dir = "../logs"
-data_load_catch_path = r"./atec_data_cnnsim_content_embedding.bin"
+data_load_catch_path = r"./dialog_data.bin"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 writer = SummaryWriter(log_dir=log_dir, comment='Dialog_Log')
 batch_size = 32
