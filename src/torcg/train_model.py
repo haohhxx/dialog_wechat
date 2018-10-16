@@ -25,15 +25,11 @@ max_length = 50
 
 
 def prepare():
-    # train_file = r"/mnt/haohhxx/d/data/atec/atec_nlp_sim_train_add.hanlpcut.csv"
-    # pre_train_embedding = r"/mnt/haohhxx/d/data/word2vec/zh/sgns.context.word-word.dynwin5.thr10.neg5.dim300.iter5/sgns.context.word-word.dynwin5.thr10.neg5.dim300.iter5.utf8.txt"
-    # pre_train_embedding = r"/mnt/haohhxx/d/data/word2vec/zh/sgns.merge.word/sgns.merge.word.utf8.txt"
-    train_file = r"D:/data/atec/atec_nlp_sim_train_add.hanlpcut.csv"
-    pre_train_embedding = r"D:/data/word2vec/zh/sgns.context.word-word.dynwin5.thr10.neg5.dim300.iter5/sgns.context" \
-                          r".word-word.dynwin5.thr10.neg5.dim300.iter5.utf8.txt "
+    train_file = r"C:\code\python3workspace\dialog_wechat\corpus\dialog_datas\sentence_dialog.txt"
+    pre_train_embedding = None
     dialog_data = DialogPairData(train_file, pre_train_embedding
                                  , batch_size=batch_size, max_length=max_length
-                                 , line_nub=-1)
+                                 , line_nub=None)
     pickle.dump(dialog_data, open(data_load_catch_path, 'wb'))
     print("catch data save at " + data_load_catch_path)
 
@@ -153,7 +149,5 @@ def train():
 
 
 if __name__ == "__main__":
-    # os.remove(log_dir)
-    # os.removedirs(log_dir)
-    # prepare()
-    train()
+    prepare()
+    # train()

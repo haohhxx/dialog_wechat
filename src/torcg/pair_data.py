@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 import numpy as np
 
-from .  vocab import Vocab
+from .s2s_vocab import Vocab
 
 
 class DialogPairDataSet(Dataset):
@@ -82,8 +82,10 @@ class DialogPairData:
         test_dataloader = DataLoader(test_pair_dataset, batch_size=batch_size, num_workers=6, shuffle=True)
 
         vocab.filter_terms_by_cnt(min_count=5)
-        # vocab.randomly_init_embeddings(300)
-        vocab.load_pretrained_embeddings(pre_train_embedding)
+        if pre_train_embedding is None:
+            vocab.randomly_init_embeddings(300)
+        else:
+            vocab.load_pretrained_embeddings(pre_train_embedding)
         # vocab.randomly_init_embeddings(300)
         self.train_dataloader = train_dataloader
         self.test_dataloader = test_dataloader
