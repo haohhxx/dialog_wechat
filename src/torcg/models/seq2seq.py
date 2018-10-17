@@ -9,7 +9,7 @@ class Attention(nn.Module):
 
     def __init__(self, dim):
         super(Attention, self).__init__()
-        self.linear_out = nn.Linear(dim*2, dim)
+        self.linear_out = nn.Linear(dim * 2, dim)
         self.mask = None
 
     def set_mask(self, mask):
@@ -45,15 +45,17 @@ class EncoderRNN(nn.Module):
 
         self.variable_lengths = variable_lengths
         # self.embedding = nn.Embedding(vocab_size, hidden_size)
+
         self.embedding = nn.Embedding(vocab.size(), vocab.embed_dim)
         self.embedding.weight = nn.Parameter(torch.FloatTensor(vocab.embeddings))
 
         self.embedding.weight.requires_grad = update_embedding
-        self.rnn = nn.LSTM(vocab.embed_dim, hidden_size, n_layers, batch_first=True, bidirectional=bidirectional, dropout=dropout_p)
+        self.rnn = nn.LSTM(vocab.embed_dim, hidden_size, n_layers, batch_first=True, bidirectional=bidirectional,
+                           dropout=dropout_p)
 
     def forward(self, input_var, input_lengths=None):
         embedded = self.embedding(input_var)
-        embedded = self.input_dropout(embedded)
+        # embedded = self.input_dropout(embedded)
         if self.variable_lengths:
             embedded = nn.utils.rnn.pack_padded_sequence(embedded, input_lengths, batch_first=True)
         output, hidden = self.rnn(embedded)
@@ -68,36 +70,35 @@ class DecoderRNN(nn.Module):
     KEY_SEQUENCE = 'sequence'
 
     def __init__(self, vocab, max_len, hidden_size,
-                 sos_id, eos_id,
                  n_layers=1, bidirectional=False,
                  dropout_p=0, use_attention=False):
         super(DecoderRNN, self).__init__()
 
         self.bidirectional_encoder = bidirectional
-        self.rnn = nn.LSTM(hidden_size, hidden_size, n_layers, batch_first=True, dropout=dropout_p)
+        self.rnn_cell = nn.LSTM(hidden_size, hidden_size, n_layers, batch_first=True, dropout=dropout_p)
 
         self.output_size = vocab.size()
         self.max_length = max_len
         self.use_attention = use_attention
-        self.eos_id = eos_id
-        self.sos_id = sos_id
+        self.eos_id = vocab.term2id[vocab.eos_term]
+        self.sos_id = vocab.term2id[vocab.sos_term]
 
         self.init_input = None
 
         self.embedding = nn.Embedding(vocab.size(), vocab.embed_dim)
         self.embedding.weight = nn.Parameter(torch.FloatTensor(vocab.embeddings))
         if use_attention:
-            self.attention = Attention(self.hidden_size)
+            self.attention = Attention(hidden_size)
 
-        self.out = nn.Linear(self.hidden_size, self.output_size)
+        self.out = nn.Linear(hidden_size, self.output_size)
 
     def forward_step(self, input_var, hidden, encoder_outputs, function):
         batch_size = input_var.size(0)
         output_size = input_var.size(1)
         embedded = self.embedding(input_var)
-        embedded = self.input_dropout(embedded)
+        # embedded = self.input_dropout(embedded)
 
-        output, hidden = self.rnn(embedded, hidden)
+        output, hidden = self.rnn_cell(embedded, hidden)
 
         attn = None
         if self.use_attention:
@@ -108,12 +109,14 @@ class DecoderRNN(nn.Module):
                                                                                                            -1)
         return predicted_softmax, hidden, attn
 
-    def forward(self, inputs=None, encoder_hidden=None, encoder_outputs=None, function=F.log_softmax, teacher_forcing_ratio=0):
+    def forward(self, inputs=None, encoder_hidden=None, encoder_outputs=None, function=F.log_softmax,
+                teacher_forcing_ratio=0):
         ret_dict = dict()
         if self.use_attention:
             ret_dict[DecoderRNN.KEY_ATTN_SCORE] = list()
 
-        inputs, batch_size, max_length = self._validate_args(inputs, encoder_hidden, encoder_outputs, function, teacher_forcing_ratio)
+        inputs, batch_size, max_length = self._validate_args(inputs, encoder_hidden, encoder_outputs, function,
+                                                             teacher_forcing_ratio)
         decoder_hidden = self._init_state(encoder_hidden)
 
         use_teacher_forcing = True if random.random() < teacher_forcing_ratio else False
@@ -140,7 +143,8 @@ class DecoderRNN(nn.Module):
         # If teacher_forcing_ratio is True or False instead of a probability, the unrolling can be done in graph
         if use_teacher_forcing:
             decoder_input = inputs[:, :-1]
-            decoder_output, decoder_hidden, attn = self.forward_step(decoder_input, decoder_hidden, encoder_outputs, function=function)
+            decoder_output, decoder_hidden, attn = self.forward_step(decoder_input, decoder_hidden, encoder_outputs,
+                                                                     function=function)
 
             for di in range(decoder_output.size(1)):
                 step_output = decoder_output[:, di, :]
@@ -152,7 +156,8 @@ class DecoderRNN(nn.Module):
         else:
             decoder_input = inputs[:, 0].unsqueeze(1)
             for di in range(max_length):
-                decoder_output, decoder_hidden, step_attn = self.forward_step(decoder_input, decoder_hidden, encoder_outputs, function=function)
+                decoder_output, decoder_hidden, step_attn = self.forward_step(decoder_input, decoder_hidden,
+                                                                              encoder_outputs, function=function)
                 step_output = decoder_output.squeeze(1)
                 symbols = decode(di, step_output, step_attn)
                 decoder_input = symbols
@@ -201,6 +206,7 @@ class DecoderRNN(nn.Module):
         if inputs is None:
             if teacher_forcing_ratio > 0:
                 raise ValueError("Teacher forcing has to be disabled (set 0) when no inputs is provided.")
+            batch_size = encoder_outputs.size(0)
             inputs = torch.LongTensor([self.sos_id] * batch_size).view(batch_size, 1)
             if torch.cuda.is_available():
                 inputs = inputs.cuda()
@@ -211,4 +217,20 @@ class DecoderRNN(nn.Module):
         return inputs, batch_size, max_length
 
 
+class Seq2Seq(nn.Module):
 
+    def __init__(self, vocab, max_len, hidden_size,
+                 n_layers=1, bidirectional=False,
+                 dropout_p=0, use_attention=True):
+        super(Seq2Seq, self).__init__()
+        self.encoder = EncoderRNN(vocab, hidden_size)
+        self.decoder = DecoderRNN(vocab, max_len, hidden_size,
+                                  n_layers=n_layers, bidirectional=bidirectional, dropout_p=dropout_p,
+                                  use_attention=use_attention)
+
+    def forward(self, input_var, inputs=None, function=F.log_softmax, teacher_forcing_ratio=0):
+        encoder_outputs, encoder_hidden = self.encoder(input_var)
+        decoder_outputs, decoder_hidden, ret_dict = self.decoder(inputs, encoder_hidden, encoder_outputs,
+                                                                 function=function,
+                                                                 teacher_forcing_ratio=teacher_forcing_ratio)
+        return decoder_outputs

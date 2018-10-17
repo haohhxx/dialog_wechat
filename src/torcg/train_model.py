@@ -1,8 +1,4 @@
-"""
-TextCNN 对两组文本进行扫描
 
-使用预选距离比较扫描结果
-"""
 import os
 
 import pickle
@@ -10,10 +6,10 @@ import torch
 import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
-from torch.autograd import Variable
 from tensorboardX import SummaryWriter
 from sklearn.metrics import f1_score, accuracy_score, classification_report
 
+from src.torcg.models.seq2seq import Seq2Seq
 from src.torcg.pair_data import DialogPairData
 
 log_dir = "../logs"
@@ -34,27 +30,22 @@ def prepare():
     print("catch data save at " + data_load_catch_path)
 
 
-def train_eatch(train_batchs, optimizer, sim_model, riterion, epoch_i):
+def train_eatch(train_batchs, optimizer, model, riterion, epoch_i):
     all_step_nub = epoch_i * train_batchs.__len__()
     total_loss = []
-
-    # riterion = nn.CosineEmbeddingLoss()
-
-    # weight = torch.Tensor([1, 5]).to(device)
-    # riterion = nn.CrossEntropyLoss(weight=weight)
 
     for batch_i, train_batch in enumerate(train_batchs):
 
         optimizer.zero_grad()
 
-        que1_array, que2_array, target = train_batch
+        src, target = train_batch
 
-        outputs = sim_model(que1_array.to(device), que2_array.to(device))
+        outputs = model(src.to(device))
         # BCEWithLogitsLoss 时需要求和 合并每一条的损失
         # batch_loss = riterion(q1_outputs, q2_outputs, target.cuda()).sum()
         # backward
         # print(outputs)
-        batch_loss = riterion(outputs, target.to(device)).sum()
+        batch_loss = riterion(outputs, target.to(device))
 
         batch_loss.backward()
 
@@ -80,9 +71,9 @@ def valid(valid_batchs, sim_model):
     pres = []
     labels = []
     for i, valid_batch in enumerate(valid_batchs):
-        que1_array, que2_array, target = valid_batch
+        src, target = valid_batch
 
-        outputs = sim_model(que1_array.to(device), que2_array.to(device))
+        outputs = sim_model(src.to(device))
         _, outputs = torch.max(outputs, 1)
 
         pres += outputs.data.cpu().numpy().tolist()
@@ -101,34 +92,31 @@ def predict(output):
 
 def train():
     """:data"""
-    atec_data = pickle.load(open(qdd, 'rb'))
-    train_batchs = atec_data.train_dataloader
-    valid_batchs = atec_data.test_dataloader
-    vocab = atec_data.vocab
+    dialog_data = pickle.load(open(data_load_catch_path, 'rb'))
+    train_batchs = dialog_data.train_dataloader
+    valid_batchs = dialog_data.test_dataloader
+    vocab = dialog_data.vocab
 
     """:parameter"""
     epoch = 100
-    c_num = 2
     # learning_rate = 0.0001 TextCnnSim
-    learning_rate = 0.0001
+    learning_rate = 0.001
     h_dim = 32
 
-    # sim_model = RnnSim(vocab, h_dim, device, c_num).to(device)
-    sim_model = TextCnnSim(vocab, output_bins=c_num, n_bins=h_dim,
-                           cnn_bins=h_dim, ckn=[1, 2, 3], dropout=0.3).to(device)
-    # sim_model = Cmatch(vocab, h_dim, nlayers=1, c_nub=c_num).to(device)
-    print(sim_model)
+    model = Seq2Seq(vocab, max_len=max_length, hidden_size=h_dim).to(device)
+    print(model)
 
-    sim_model_optim = torch.optim.Adam(sim_model.parameters(), lr=learning_rate)
-
+    sim_model_optim = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    riterion = nn.NLLLoss()
     max_test_acc = 0.0
     #    保存
     for epoch_i in range(epoch):
         total_loss = train_eatch(train_batchs,
                                  sim_model_optim,
-                                 sim_model,
+                                 model,
+                                 riterion,
                                  epoch_i)
-        f1score, accuracy, report = valid(valid_batchs, sim_model)
+        f1score, accuracy, report = valid(valid_batchs, model)
 
         """log"""
         writer.add_scalars('toge', {'train_loss': float(total_loss),
@@ -149,5 +137,5 @@ def train():
 
 
 if __name__ == "__main__":
-    prepare()
-    # train()
+    # prepare()
+    train()

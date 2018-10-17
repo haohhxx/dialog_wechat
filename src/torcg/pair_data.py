@@ -25,7 +25,7 @@ class DialogPairDataSet(Dataset):
         max_length = self.max_length
 
         def pad_que(que_line):
-            que_line = sos_token_id + que_line[:max_length-2] + eos_token_id
+            que_line = [sos_token_id] + que_line[:max_length-2] + [eos_token_id]
 
             que_line_pad = np.zeros(max_length, dtype=np.int64)
             for i, tid in enumerate(np.asarray(que_line, dtype=np.int64)):
