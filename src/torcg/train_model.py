@@ -3,6 +3,7 @@ import os
 
 import pickle
 import torch
+from tqdm import tqdm
 import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
@@ -16,7 +17,7 @@ log_dir = "../logs"
 data_load_catch_path = r"./dialog_data.bin"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 writer = SummaryWriter(log_dir=log_dir, comment='Dialog_Log')
-batch_size = 32
+batch_size = 16
 max_length = 50
 
 
@@ -34,18 +35,20 @@ def train_eatch(train_batchs, optimizer, model, riterion, epoch_i):
     all_step_nub = epoch_i * train_batchs.__len__()
     total_loss = []
 
-    for batch_i, train_batch in enumerate(train_batchs):
+    for batch_i, train_batch in tqdm(enumerate(train_batchs)):
 
         optimizer.zero_grad()
 
         src, target = train_batch
 
-        outputs = model(src.to(device))
-        # BCEWithLogitsLoss 时需要求和 合并每一条的损失
-        # batch_loss = riterion(q1_outputs, q2_outputs, target.cuda()).sum()
-        # backward
-        # print(outputs)
-        batch_loss = riterion(outputs, target.to(device))
+        decoder_outputs = model(src.to(device))
+
+        batch_loss = 0.0
+        for step, step_output in tqdm(enumerate(decoder_outputs)):
+            batch_size = target.size(0)
+            step_target = target[:, step].to(device)
+            step_loss = riterion(step_output.contiguous().view(batch_size, -1), step_target)
+            batch_loss += step_loss
 
         batch_loss.backward()
 
@@ -53,7 +56,7 @@ def train_eatch(train_batchs, optimizer, model, riterion, epoch_i):
         optimizer.step()
 
         total_loss.append(batch_loss.data)
-        if batch_i % 100 == 0:
+        if batch_i % 10 == 0:
             print(batch_i, batch_loss)
             # writer.add_scalar('batch_loss', batch_loss, batch_i)
         writer.add_scalar('train_batch_loss', batch_loss, all_step_nub + batch_i)
@@ -67,23 +70,23 @@ def train_eatch(train_batchs, optimizer, model, riterion, epoch_i):
     return np.mean(total_loss)
 
 
-def valid(valid_batchs, sim_model):
-    pres = []
-    labels = []
+def valid(valid_batchs, model, riterion):
+
+    loss = 0.0
     for i, valid_batch in enumerate(valid_batchs):
         src, target = valid_batch
 
-        outputs = sim_model(src.to(device))
-        _, outputs = torch.max(outputs, 1)
+        decoder_outputs = model(src.to(device))
+        batch_loss = 0.0
+        for step, step_output in enumerate(decoder_outputs):
+            batch_size = target.size(0)
+            step_target = target[:, step].to(device)
+            step_loss = riterion(step_output.contiguous().view(batch_size, -1), step_target)
+            batch_loss += step_loss
 
-        pres += outputs.data.cpu().numpy().tolist()
-        labels += target.data.cpu().numpy().tolist()
+        loss += batch_loss
         # print(predict)
-
-    f1score = f1_score(labels, pres)
-    accuracy = accuracy_score(labels, pres)
-    report = classification_report(labels, pres)
-    return f1score, accuracy, report
+    return loss
 
 
 def predict(output):
@@ -108,7 +111,6 @@ def train():
 
     sim_model_optim = torch.optim.Adam(model.parameters(), lr=learning_rate)
     riterion = nn.NLLLoss()
-    max_test_acc = 0.0
     #    保存
     for epoch_i in range(epoch):
         total_loss = train_eatch(train_batchs,
@@ -116,16 +118,14 @@ def train():
                                  model,
                                  riterion,
                                  epoch_i)
-        f1score, accuracy, report = valid(valid_batchs, model)
+        test_loss = valid(valid_batchs, model, riterion)
 
         """log"""
         writer.add_scalars('toge', {'train_loss': float(total_loss),
-                                    'valid_f1score': f1score,
-                                    'valid_accuracy': accuracy}, epoch_i)
+                                    'test_loss': float(test_loss)
+                                    }, epoch_i)
         print("epoch:{} loss:{}".format(epoch_i, total_loss))
-        print("epoch:{} f1score:{}".format(epoch_i, f1score))
-        print("epoch:{} accuracy:{}".format(epoch_i, accuracy))
-        print(report)
+        print("epoch:{} test_loss:{}".format(epoch_i, test_loss))
 
         # checkpoint = {
         #     'model': knrm_model,
@@ -137,5 +137,5 @@ def train():
 
 
 if __name__ == "__main__":
-    # prepare()
+    prepare()
     train()

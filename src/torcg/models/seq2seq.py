@@ -73,9 +73,9 @@ class DecoderRNN(nn.Module):
                  n_layers=1, bidirectional=False,
                  dropout_p=0, use_attention=False):
         super(DecoderRNN, self).__init__()
-
+        self.hidden_size = hidden_size
         self.bidirectional_encoder = bidirectional
-        self.rnn_cell = nn.LSTM(hidden_size, hidden_size, n_layers, batch_first=True, dropout=dropout_p)
+        self.rnn_cell = nn.LSTM(vocab.embed_dim, hidden_size, n_layers, batch_first=True, dropout=dropout_p)
 
         self.output_size = vocab.size()
         self.max_length = max_len
@@ -109,13 +109,15 @@ class DecoderRNN(nn.Module):
                                                                                                            -1)
         return predicted_softmax, hidden, attn
 
-    def forward(self, inputs=None, encoder_hidden=None, encoder_outputs=None, function=F.log_softmax,
-                teacher_forcing_ratio=0):
+    def forward(self, inputs=None, encoder_hidden=None, encoder_outputs=None, function=F.log_softmax, teacher_forcing_ratio=0):
         ret_dict = dict()
         if self.use_attention:
             ret_dict[DecoderRNN.KEY_ATTN_SCORE] = list()
 
-        inputs, batch_size, max_length = self._validate_args(inputs, encoder_hidden, encoder_outputs, function,
+        inputs, batch_size, max_length = self._validate_args(inputs,
+                                                             encoder_hidden,
+                                                             encoder_outputs,
+                                                             function,
                                                              teacher_forcing_ratio)
         decoder_hidden = self._init_state(encoder_hidden)
 
