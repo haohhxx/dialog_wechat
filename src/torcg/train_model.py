@@ -17,8 +17,8 @@ log_dir = "../logs"
 data_load_catch_path = r"./dialog_data.bin"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 writer = SummaryWriter(log_dir=log_dir, comment='Dialog_Log')
-batch_size = 16
-max_length = 50
+batch_size = 8
+max_length = 30
 
 
 def prepare():
@@ -35,7 +35,7 @@ def train_eatch(train_batchs, optimizer, model, riterion, epoch_i):
     all_step_nub = epoch_i * train_batchs.__len__()
     total_loss = []
 
-    for batch_i, train_batch in tqdm(enumerate(train_batchs)):
+    for batch_i, train_batch in enumerate((train_batchs)):
 
         optimizer.zero_grad()
 
@@ -44,7 +44,7 @@ def train_eatch(train_batchs, optimizer, model, riterion, epoch_i):
         decoder_outputs = model(src.to(device))
 
         batch_loss = 0.0
-        for step, step_output in tqdm(enumerate(decoder_outputs)):
+        for step, step_output in enumerate((decoder_outputs)):
             batch_size = target.size(0)
             step_target = target[:, step].to(device)
             step_loss = riterion(step_output.contiguous().view(batch_size, -1), step_target)
@@ -73,12 +73,12 @@ def train_eatch(train_batchs, optimizer, model, riterion, epoch_i):
 def valid(valid_batchs, model, riterion):
 
     loss = 0.0
-    for i, valid_batch in enumerate(valid_batchs):
+    for i, valid_batch in enumerate((valid_batchs)):
         src, target = valid_batch
 
         decoder_outputs = model(src.to(device))
         batch_loss = 0.0
-        for step, step_output in enumerate(decoder_outputs):
+        for step, step_output in enumerate((decoder_outputs)):
             batch_size = target.size(0)
             step_target = target[:, step].to(device)
             step_loss = riterion(step_output.contiguous().view(batch_size, -1), step_target)
