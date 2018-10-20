@@ -126,7 +126,7 @@ def train():
     vocab = dialog_data.vocab
 
     """:parameter"""
-    epoch = 100
+    epoch = 1
     # learning_rate = 0.0001 TextCnnSim
     learning_rate = 0.001
     h_dim = 32
@@ -160,6 +160,6 @@ def train():
 
 
 if __name__ == "__main__":
-    # prepare()
-    # train()
+    prepare()
+    train()
     predict()

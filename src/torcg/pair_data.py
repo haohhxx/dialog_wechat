@@ -62,8 +62,8 @@ class DialogPairData:
                 ls = line.split("\t")
                 add2vocab(ls)
                 for did in range(1, len(ls)):
-                    src.append(ls[did-1])
-                    target.append(ls[did])
+                    src.append(ls[did-1].split(" "))
+                    target.append(ls[did].split(" "))
             return src, target
 
         with open(train_file, 'r', encoding='utf-8') as csv_file:
