@@ -56,7 +56,7 @@ def train_eatch(train_batchs, optimizer, model, riterion, epoch_i):
         optimizer.step()
 
         total_loss.append(batch_loss.data)
-        if batch_i % 10 == 0:
+        if batch_i % 100 == 0:
             print(batch_i, batch_loss)
             # writer.add_scalar('batch_loss', batch_loss, batch_i)
         writer.add_scalar('train_batch_loss', batch_loss, all_step_nub + batch_i)
@@ -89,8 +89,33 @@ def valid(valid_batchs, model, riterion):
     return loss
 
 
-def predict(output):
-    _, predict = torch.max(output, 1)
+def predict():
+    import jieba
+
+    s2smodel_checkpoint = torch.load(r"C:\code\python3workspace\dialog_wechat\src\torcg\epoch_0.pt")
+    s2smodel = s2smodel_checkpoint["model"]
+    s2svocab = s2smodel_checkpoint["vocab"]
+    eos_token_id = s2svocab.term2id[s2svocab.eos_term]
+    sos_token_id = s2svocab.term2id[s2svocab.sos_term]
+
+    def pad_que(que_line):
+        que_line = [sos_token_id] + que_line[:max_length - 2] + [eos_token_id]
+
+        que_line_pad = np.zeros(max_length, dtype=np.int64)
+        for i, tid in enumerate(np.asarray(que_line, dtype=np.int64)):
+            que_line_pad[i] = tid
+        return que_line_pad
+    src = "祝 你 早日 毕业"
+    # src = list(jieba.cut(src))
+    src = src.split(" ")
+    src = s2svocab.convert_to_ids(src)
+    src = pad_que(src)
+    src = torch.LongTensor(src).to(device).unsqueeze(0)
+    decoder_outputs = s2smodel(src)
+    for outputs in decoder_outputs:
+        term_id = torch.max(outputs, 1)[1].cpu().tolist()[0]
+        ow = s2svocab.id2term[term_id]
+        print(ow)
 
 
 def train():
@@ -127,15 +152,14 @@ def train():
         print("epoch:{} loss:{}".format(epoch_i, total_loss))
         print("epoch:{} test_loss:{}".format(epoch_i, test_loss))
 
-        # checkpoint = {
-        #     'model': knrm_model,
-        #     'epoch': epoch_i,
-        # }
-        # torch.save(checkpoint,
-        #            'acc_{}_f1_{}.pt'
-        #            .format(accuracy,f1score, epoch_i))
+        checkpoint = {
+            'model': model,
+            'vocab': vocab,
+        }
+        torch.save(checkpoint, 'epoch_{}.pt'.format(epoch_i))
 
 
 if __name__ == "__main__":
-    prepare()
-    train()
+    # prepare()
+    # train()
+    predict()
