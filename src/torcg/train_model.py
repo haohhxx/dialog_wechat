@@ -92,7 +92,7 @@ def valid(valid_batchs, model, riterion):
 def predict():
     import jieba
 
-    s2smodel_checkpoint = torch.load(r"C:\code\python3workspace\dialog_wechat\src\torcg\epoch_0.pt")
+    s2smodel_checkpoint = torch.load(r"C:\code\python3workspace\dialog_wechat\src\torcg\epoch_14.pt")
     s2smodel = s2smodel_checkpoint["model"]
     s2svocab = s2smodel_checkpoint["vocab"]
     eos_token_id = s2svocab.term2id[s2svocab.eos_term]
@@ -105,7 +105,7 @@ def predict():
         for i, tid in enumerate(np.asarray(que_line, dtype=np.int64)):
             que_line_pad[i] = tid
         return que_line_pad
-    src = "祝 你 早日 毕业"
+    src = "挺 有意思 的 呀	哈哈哈"
     # src = list(jieba.cut(src))
     src = src.split(" ")
     src = s2svocab.convert_to_ids(src)
@@ -126,7 +126,7 @@ def train():
     vocab = dialog_data.vocab
 
     """:parameter"""
-    epoch = 1
+    epoch = 100
     # learning_rate = 0.0001 TextCnnSim
     learning_rate = 0.001
     h_dim = 32
@@ -160,6 +160,6 @@ def train():
 
 
 if __name__ == "__main__":
-    prepare()
+    # prepare()
     train()
     predict()

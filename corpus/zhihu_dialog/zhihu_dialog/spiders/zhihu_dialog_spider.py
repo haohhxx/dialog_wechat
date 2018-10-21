@@ -175,8 +175,8 @@ class ZhihuloginSpider(scrapy.Spider):
             "timestamp": timestamp,
             "source": source,
             "signature": get_signature(grantType, clientId, source, timestamp),  # 获取签名
-            "username": "18049908219",
-            "password": "00oo00OO",
+            "username": input("username:"),
+            "password": input("password:"),
             "lang": "cn",
             "captcha": response.meta['captcha'],  # 获取图片验证码
             "ref_source": "other_",
