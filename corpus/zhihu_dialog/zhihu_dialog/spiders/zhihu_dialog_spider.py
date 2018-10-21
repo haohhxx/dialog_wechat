@@ -156,14 +156,7 @@ class ZhihuloginSpider(scrapy.Spider):
         # post_url = 'https://www.zhihu.com/login/phone_num'
         # post_url = 'https://www.zhihu.com/api/v3/oauth/captcha?lang=cn'
         post_url = 'https://www.zhihu.com/api/v3/oauth/sign_in'
-        # post_data = {
-        #     # "_xsrf": xsrf,
-        #     # "phone_num": input('user:\n'),
-        #     "phone_num": "18049908219",
-        #     "password": "00oo00OO",
-        #     # "password": input('password:\n'),
-        #     "captcha": response.meta['captcha']
-        # }
+
         grantType = 'password'
         clientId = 'c3cef7c66a1843f8b3a9e6a1e3160e20'
         source = 'com.zhihu.web'
